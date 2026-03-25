@@ -1,0 +1,10 @@
+console.log("DEBUG SCRIPT EXECUTING");
+const div = document.createElement('div');
+div.innerText = "DEBUG SCRIPT WORKS";
+div.style.position = "fixed";
+div.style.top = "50px";
+div.style.left = "0";
+div.style.background = "blue";
+div.style.color = "white";
+div.style.zIndex = "10000";
+document.body.appendChild(div);

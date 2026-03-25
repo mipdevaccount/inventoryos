@@ -1,0 +1,18 @@
+JOB_ID,PRODUCT_ID,QUANTITY_REQUIRED,QUANTITY_ALLOCATED,NOTES
+JOB-1000,PROD006,15.37,0,Required for Flatbed
+JOB-1000,PROD002,35.21,0,Required for Flatbed
+JOB-1000,PROD005,27.61,0,Required for Flatbed
+JOB-1001,PROD005,46.54,0,Required for Forestry Chipper
+JOB-1001,PROD008,43.79,0,Required for Forestry Chipper
+JOB-1001,PROD004,8.91,0,Required for Forestry Chipper
+JOB-1001,PROD001,15.61,0,Required for Forestry Chipper
+JOB-1001,PROD006,4.61,0,Required for Forestry Chipper
+JOB-1000,PROD004,24.65,0,Required for Flatbed
+JOB-1000,PROD007,35.48,0,Required for Flatbed
+JOB-1000,PROD001,22.13,0,Required for Flatbed
+JOB-1000,PROD005,26.42,0,Required for Flatbed
+JOB-1000,PROD008,27.06,0,Required for Flatbed
+JOB-1001,PROD003,31.22,0,Required for Forestry Chipper
+JOB-1001,PROD010,20.8,0,Required for Forestry Chipper
+JOB-1001,PROD001,33.56,0,Required for Forestry Chipper
+JOB-1001,PROD007,37.2,0,Required for Forestry Chipper

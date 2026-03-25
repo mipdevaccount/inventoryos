@@ -1,0 +1,270 @@
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getProducts, submitRequest, type Product } from '../lib/api';
+import { Search, MapPin, Ruler } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const ShopFloor = () => {
+    const [search, setSearch] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const { data: products, isLoading } = useQuery({
+        queryKey: ['products'],
+        queryFn: () => getProducts(true),
+    });
+
+    // Handle Scan-to-Request (QR Code)
+    useEffect(() => {
+        if (products && products.length > 0) {
+            const params = new URLSearchParams(window.location.search);
+            const requestProductId = params.get('request_product');
+
+            if (requestProductId) {
+                const product = products.find(p => p.PRODUCT_ID === requestProductId);
+                if (product) {
+                    setSelectedProduct(product);
+                    setIsModalOpen(true);
+
+                    // Clean up URL without refreshing
+                    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                }
+            }
+        }
+    }, [products]);
+
+    const filteredProducts = products?.filter(p =>
+        p.PRODUCT_NAME.toLowerCase().includes(search.toLowerCase()) ||
+        p.PRODUCT_ID.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const handleProductClick = (product: Product) => {
+        setSelectedProduct(product);
+        setIsModalOpen(true);
+    };
+
+    return (
+        <div className="space-y-8 pb-20">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        Shop Floor
+                    </h1>
+                    <p className="text-muted-foreground text-lg">Select a product to request inventory.</p>
+                </div>
+
+                <div className="relative w-full md:w-96 group">
+                    <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search products..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-12 pr-4 py-4 rounded-2xl border border-border/50 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all text-lg"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {isLoading ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="h-48 rounded-3xl bg-muted/50 animate-pulse" />
+                    ))}
+                </div>
+            ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredProducts?.map((product, index) => (
+                        <motion.div
+                            key={product.PRODUCT_ID}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            layoutId={`product-${product.PRODUCT_ID}`}
+                            onClick={() => handleProductClick(product)}
+                            className="group relative overflow-hidden rounded-3xl border border-white/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-6 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-primary/25 group-hover:scale-110 transition-transform duration-300">
+                                        {product.PRODUCT_NAME.charAt(0)}
+                                    </div>
+                                    <span className="text-xs font-mono font-medium text-muted-foreground bg-secondary/50 px-3 py-1.5 rounded-full border border-border/50">
+                                        {product.PRODUCT_ID}
+                                    </span>
+                                </div>
+
+                                <h3 className="font-bold text-xl mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                                    {product.PRODUCT_NAME}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-6 line-clamp-2 h-10 leading-relaxed">
+                                    {product.DESCRIPTION || 'No description available'}
+                                </p>
+
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground pt-4 border-t border-border/50">
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin size={14} className="text-primary" />
+                                        <span className="font-medium">{product.LOCATION || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <Ruler size={14} className="text-primary" />
+                                        <span className="font-medium">{product.UNIT_OF_MEASURE}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            <RequestModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                product={selectedProduct}
+            />
+        </div>
+    );
+};
+
+const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: () => void; product: Product | null }) => {
+    const [quantity, setQuantity] = useState(1);
+    const [urgency, setUrgency] = useState('medium');
+    const [notes, setNotes] = useState('');
+    const [name, setName] = useState('');
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation({
+        mutationFn: submitRequest,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['requests'] });
+            onClose();
+            setQuantity(1);
+            setUrgency('medium');
+            setNotes('');
+            // Show success toast (could be implemented globally)
+            alert('Request submitted successfully!');
+        },
+    });
+
+    if (!isOpen || !product) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                />
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/10"
+                >
+                    <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-primary/20 to-indigo-600/20" />
+
+                    <div className="relative p-8">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-primary/25">
+                                {product.PRODUCT_NAME.charAt(0)}
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold">Request Inventory</h2>
+                                <p className="text-muted-foreground font-medium">
+                                    {product.PRODUCT_NAME}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Your Name</label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Enter your name"
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Quantity ({product.UNIT_OF_MEASURE})</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(parseInt(e.target.value))}
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Urgency</label>
+                                    <select
+                                        value={urgency}
+                                        onChange={(e) => setUrgency(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
+                                    >
+                                        <option value="low">Low Priority</option>
+                                        <option value="medium">Medium Priority</option>
+                                        <option value="high">High Priority</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notes (Optional)</label>
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Any additional details..."
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex justify-end gap-3">
+                            <button
+                                onClick={onClose}
+                                className="px-6 py-3 rounded-xl font-semibold hover:bg-secondary transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (!name) {
+                                        alert('Please enter your name');
+                                        return;
+                                    }
+                                    mutation.mutate({
+                                        product_id: product.PRODUCT_ID,
+                                        requested_by: name,
+                                        quantity_needed: quantity,
+                                        urgency,
+                                        notes
+                                    });
+                                }}
+                                disabled={mutation.isPending}
+                                className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
+                            >
+                                {mutation.isPending ? 'Submitting...' : 'Submit Request'}
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+export default ShopFloor;
