@@ -1,0 +1,14 @@
+app_name        = "commander"
+env             = "prod"
+aws_region      = "us-east-1"
+aws_account_id  = "547456401969"
+app_type        = "business"
+subdomain       = "commander.pxltd.ca"
+owner           = "Jtoro"
+backend_port    = 8000
+frontend_port   = 80
+backend_cpu     = 256
+backend_memory  = 512
+frontend_cpu    = 256
+frontend_memory = 512
+snowflake_enabled = false

@@ -4,44 +4,20 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Dynamic Base Networking ───────────────────────────────────────────────────
-# Business apps lookup enterprise infrastructure. Personal apps use the default VPC.
-data "aws_vpc" "main" {
-  count = var.app_type == "business" ? 1 : 0
-  tags  = { Name = "px-vpc" }
+# We use the standardized "CLIENT APPS VPC" created in vpc.tf
+
+locals {
+  vpc_id             = data.aws_vpc.default.id
+  subnet_ids         = data.aws_subnets.default.ids
+  ecs_tasks_sg_id    = aws_security_group.ecs_tasks.id
 }
 
-data "aws_subnets" "private" {
-  count = var.app_type == "business" ? 1 : 0
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.main[0].id]
-  }
-  tags = { Tier = "private" }
-}
-
-data "aws_security_group" "ecs_tasks" {
-  count  = var.app_type == "business" ? 1 : 0
-  name   = "px-ecs-tasks-sg"
-  vpc_id = data.aws_vpc.main[0].id
-}
-
-data "aws_vpc" "default" {
-  count   = var.app_type != "business" ? 1 : 0
-  default = true
-}
-
-data "aws_subnets" "default" {
-  count = var.app_type != "business" ? 1 : 0
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default[0].id]
-  }
-}
-
-# Personal apps create their own temporary sandbox ECS cluster
-resource "aws_ecs_cluster" "personal" {
-  count = var.app_type != "business" ? 1 : 0
-  name  = "px-${var.env}-cluster"
+resource "aws_ecs_cluster" "app" {
+  name = "px-apps-cluster"
+  
+  tags = merge(local.common_tags, {
+    Name = "px-apps-cluster"
+  })
 }
 
 # ── CloudWatch Log Group ───────────────────────────────────────────────────────
@@ -148,21 +124,22 @@ resource "aws_ecs_task_definition" "frontend" {
 
 resource "aws_ecs_service" "backend" {
   name            = "${var.app_name}-backend-${var.env}"
-  cluster         = var.app_type == "business" ? "px-${var.env}-cluster" : aws_ecs_cluster.personal[0].id
+  cluster         = aws_ecs_cluster.app.id
   task_definition = aws_ecs_task_definition.backend.arn
   desired_count   = var.env == "prod" ? 2 : 1
-  launch_type     = "FARGATE"
+  launch_type           = "FARGATE"
+  wait_for_steady_state = false
 
   network_configuration {
-    subnets          = var.app_type == "business" ? data.aws_subnets.private[0].ids : data.aws_subnets.default[0].ids
-    security_groups  = var.app_type == "business" ? [data.aws_security_group.ecs_tasks[0].id] : []
-    assign_public_ip = var.app_type == "business" ? false : true
+    subnets          = local.subnet_ids
+    security_groups  = [local.ecs_tasks_sg_id]
+    assign_public_ip = true
   }
 
   dynamic "load_balancer" {
     for_each = var.app_type == "business" ? [1] : []
     content {
-      target_group_arn = aws_lb_target_group.backend[0].arn
+      target_group_arn = aws_lb_target_group.backend.arn
       container_name   = "backend"
       container_port   = var.backend_port
     }
@@ -175,21 +152,22 @@ resource "aws_ecs_service" "backend" {
 
 resource "aws_ecs_service" "frontend" {
   name            = "${var.app_name}-frontend-${var.env}"
-  cluster         = var.app_type == "business" ? "px-${var.env}-cluster" : aws_ecs_cluster.personal[0].id
+  cluster         = aws_ecs_cluster.app.id
   task_definition = aws_ecs_task_definition.frontend.arn
   desired_count   = var.env == "prod" ? 2 : 1
-  launch_type     = "FARGATE"
+  launch_type           = "FARGATE"
+  wait_for_steady_state = false
 
   network_configuration {
-    subnets          = var.app_type == "business" ? data.aws_subnets.private[0].ids : data.aws_subnets.default[0].ids
-    security_groups  = var.app_type == "business" ? [data.aws_security_group.ecs_tasks[0].id] : []
-    assign_public_ip = var.app_type == "business" ? false : true
+    subnets          = local.subnet_ids
+    security_groups  = [local.ecs_tasks_sg_id]
+    assign_public_ip = true
   }
 
   dynamic "load_balancer" {
     for_each = var.app_type == "business" ? [1] : []
     content {
-      target_group_arn = aws_lb_target_group.frontend[0].arn
+      target_group_arn = aws_lb_target_group.frontend.arn
       container_name   = "frontend"
       container_port   = var.frontend_port
     }

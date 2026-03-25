@@ -1,0 +1,617 @@
+[0m[1mdata.aws_iam_openid_connect_provider.github: Reading...[0m[0m
+[0m[1mdata.aws_vpc.default: Reading...[0m[0m
+[0m[1maws_ecs_cluster.app: Refreshing state... [id=arn:aws:ecs:us-east-1:547456401969:cluster/px-apps-cluster][0m
+[0m[1maws_ecr_repository.backend: Refreshing state... [id=commander-backend][0m
+[0m[1maws_ecr_repository.frontend: Refreshing state... [id=commander-frontend][0m
+[0m[1maws_iam_policy.app_boundary: Refreshing state... [id=arn:aws:iam::547456401969:policy/px-app-boundary-commander][0m
+[0m[1mdata.aws_caller_identity.current: Reading...[0m[0m
+[0m[1maws_cloudwatch_log_group.app: Refreshing state... [id=/px/dev/commander][0m
+[0m[1mdata.aws_caller_identity.current: Read complete after 0s [id=547456401969][0m
+[0m[1mdata.aws_iam_openid_connect_provider.github: Read complete after 0s [id=arn:aws:iam::547456401969:oidc-provider/token.actions.githubusercontent.com][0m
+[0m[1mdata.aws_iam_policy_document.github_oidc_trust: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.github_oidc_trust: Read complete after 0s [id=84173868][0m
+[0m[1maws_ecr_lifecycle_policy.frontend: Refreshing state... [id=commander-frontend][0m
+[0m[1maws_ecr_lifecycle_policy.backend: Refreshing state... [id=commander-backend][0m
+[0m[1maws_iam_role.ecs_task_execution: Refreshing state... [id=px-ecs-exec-commander-dev][0m
+[0m[1maws_iam_role.app_deploy: Refreshing state... [id=px-deploy-commander][0m
+[0m[1maws_iam_role_policy_attachment.ecs_task_execution: Refreshing state... [id=px-ecs-exec-commander-dev/arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy][0m
+[0m[1maws_iam_role_policy.app_deploy: Refreshing state... [id=px-deploy-commander:px-deploy-policy-commander][0m
+[0m[1maws_iam_role_policy.ecs_secrets: Refreshing state... [id=px-ecs-exec-commander-dev:px-secrets-commander-dev][0m
+[0m[1maws_ecs_task_definition.backend: Refreshing state... [id=commander-backend-dev][0m
+[0m[1maws_ecs_task_definition.frontend: Refreshing state... [id=commander-frontend-dev][0m
+[0m[1mdata.aws_vpc.default: Read complete after 0s [id=vpc-03cee72c695e3d083][0m
+[0m[1mdata.aws_subnets.default: Reading...[0m[0m
+[0m[1maws_security_group.lb: Refreshing state... [id=sg-076776d40a06c9506][0m
+[0m[1maws_lb_target_group.frontend: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:targetgroup/cmdr-fe-dev/865c22671c0a1b85][0m
+[0m[1maws_lb_target_group.backend: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:targetgroup/cmdr-be-dev/0b3538517770f111][0m
+[0m[1mdata.aws_subnets.default: Read complete after 1s [id=us-east-1][0m
+[0m[1maws_security_group.ecs_tasks: Refreshing state... [id=sg-083eaab4538844e86][0m
+[0m[1maws_lb.main: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:loadbalancer/app/px-apps-alb/fe61401719b86403][0m
+[0m[1maws_ecs_service.backend: Refreshing state... [id=arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-backend-dev][0m
+[0m[1maws_ecs_service.frontend: Refreshing state... [id=arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-frontend-dev][0m
+[0m[1maws_lb_listener.http: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:listener/app/px-apps-alb/fe61401719b86403/080bdd756e2d56c7][0m
+[0m[1maws_lb_listener.https: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:listener/app/px-apps-alb/fe61401719b86403/041c37407d988412][0m
+[0m[1maws_lb_listener_rule.frontend: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:listener-rule/app/px-apps-alb/fe61401719b86403/041c37407d988412/8a9a94446974e1ea][0m
+[0m[1maws_lb_listener_rule.backend: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:547456401969:listener-rule/app/px-apps-alb/fe61401719b86403/041c37407d988412/dbfcd4dd2e7b2d70][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [33m~[0m update in-place[0m
+[31m-[0m/[32m+[0m destroy and then create replacement[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_cloudwatch_log_group.app[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_cloudwatch_log_group" "app" {
+      [33m~[0m[0m arn                         = "arn:aws:logs:us-east-1:547456401969:log-group:/px/dev/commander" -> (known after apply)
+      [33m~[0m[0m deletion_protection_enabled = false -> (known after apply)
+      [33m~[0m[0m id                          = "/px/dev/commander" -> (known after apply)
+      [33m~[0m[0m log_group_class             = "STANDARD" -> (known after apply)
+      [33m~[0m[0m name                        = "/px/dev/commander" [33m->[0m[0m "/px/prod/commander" [31m# forces replacement[0m[0m
+      [32m+[0m[0m name_prefix                 = (known after apply)
+      [33m~[0m[0m tags                        = {
+          [33m~[0m[0m "Name"    = "/px/dev/commander" [33m->[0m[0m "/px/prod/commander"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                    = {
+          [33m~[0m[0m "Name"    = "/px/dev/commander" [33m->[0m[0m "/px/prod/commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+        [90m# (4 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_ecr_repository.backend[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_ecr_repository" "backend" {
+        id                   = "commander-backend"
+      [33m~[0m[0m image_tag_mutability = "MUTABLE" [33m->[0m[0m "IMMUTABLE"
+        name                 = "commander-backend"
+      [33m~[0m[0m tags                 = {
+            "Name"    = "commander-backend-ecr"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all             = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (4 unchanged attributes hidden)[0m[0m
+
+        [90m# (2 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_ecr_repository.frontend[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_ecr_repository" "frontend" {
+        id                   = "commander-frontend"
+      [33m~[0m[0m image_tag_mutability = "MUTABLE" [33m->[0m[0m "IMMUTABLE"
+        name                 = "commander-frontend"
+      [33m~[0m[0m tags                 = {
+            "Name"    = "commander-frontend-ecr"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all             = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (4 unchanged attributes hidden)[0m[0m
+
+        [90m# (2 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_ecs_cluster.app[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_ecs_cluster" "app" {
+        id       = "arn:aws:ecs:us-east-1:547456401969:cluster/px-apps-cluster"
+        name     = "px-apps-cluster"
+      [33m~[0m[0m tags     = {
+            "Name"    = "px-apps-cluster"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (2 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # aws_ecs_service.backend[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_ecs_service" "backend" {
+      [33m~[0m[0m arn                                = "arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-backend-dev" -> (known after apply)
+      [33m~[0m[0m availability_zone_rebalancing      = "ENABLED" -> (known after apply)
+      [33m~[0m[0m desired_count                      = 1 [33m->[0m[0m 2
+      [31m-[0m[0m health_check_grace_period_seconds  = 0 [90m-> null[0m[0m
+      [33m~[0m[0m iam_role                           = "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS" -> (known after apply)
+      [33m~[0m[0m id                                 = "arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-backend-dev" -> (known after apply)
+      [33m~[0m[0m name                               = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod" [31m# forces replacement[0m[0m
+      [33m~[0m[0m platform_version                   = "LATEST" -> (known after apply)
+      [31m-[0m[0m propagate_tags                     = "NONE" [90m-> null[0m[0m
+      [33m~[0m[0m tags                               = {
+          [33m~[0m[0m "Name"    = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                           = {
+          [33m~[0m[0m "Name"    = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+      [33m~[0m[0m task_definition                    = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-backend-dev:1" -> (known after apply)
+      [33m~[0m[0m triggers                           = {} -> (known after apply)
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+      [31m-[0m[0m deployment_circuit_breaker {
+          [31m-[0m[0m enable   = false [90m-> null[0m[0m
+          [31m-[0m[0m rollback = false [90m-> null[0m[0m
+        }
+
+      [33m~[0m[0m deployment_configuration (known after apply)
+      [31m-[0m[0m deployment_configuration {
+          [31m-[0m[0m bake_time_in_minutes = "0" [90m-> null[0m[0m
+          [31m-[0m[0m strategy             = "ROLLING" [90m-> null[0m[0m
+        }
+
+      [31m-[0m[0m deployment_controller {
+          [31m-[0m[0m type = "ECS" [90m-> null[0m[0m
+        }
+
+        [90m# (2 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_ecs_service.frontend[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_ecs_service" "frontend" {
+      [33m~[0m[0m arn                                = "arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-frontend-dev" -> (known after apply)
+      [33m~[0m[0m availability_zone_rebalancing      = "ENABLED" -> (known after apply)
+      [33m~[0m[0m desired_count                      = 1 [33m->[0m[0m 2
+      [31m-[0m[0m health_check_grace_period_seconds  = 0 [90m-> null[0m[0m
+      [33m~[0m[0m iam_role                           = "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS" -> (known after apply)
+      [33m~[0m[0m id                                 = "arn:aws:ecs:us-east-1:547456401969:service/px-apps-cluster/commander-frontend-dev" -> (known after apply)
+      [33m~[0m[0m name                               = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod" [31m# forces replacement[0m[0m
+      [33m~[0m[0m platform_version                   = "LATEST" -> (known after apply)
+      [31m-[0m[0m propagate_tags                     = "NONE" [90m-> null[0m[0m
+      [33m~[0m[0m tags                               = {
+          [33m~[0m[0m "Name"    = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                           = {
+          [33m~[0m[0m "Name"    = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+      [33m~[0m[0m task_definition                    = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-frontend-dev:1" -> (known after apply)
+      [33m~[0m[0m triggers                           = {} -> (known after apply)
+        [90m# (9 unchanged attributes hidden)[0m[0m
+
+      [31m-[0m[0m deployment_circuit_breaker {
+          [31m-[0m[0m enable   = false [90m-> null[0m[0m
+          [31m-[0m[0m rollback = false [90m-> null[0m[0m
+        }
+
+      [33m~[0m[0m deployment_configuration (known after apply)
+      [31m-[0m[0m deployment_configuration {
+          [31m-[0m[0m bake_time_in_minutes = "0" [90m-> null[0m[0m
+          [31m-[0m[0m strategy             = "ROLLING" [90m-> null[0m[0m
+        }
+
+      [31m-[0m[0m deployment_controller {
+          [31m-[0m[0m type = "ECS" [90m-> null[0m[0m
+        }
+
+        [90m# (2 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_ecs_task_definition.backend[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_ecs_task_definition" "backend" {
+      [33m~[0m[0m arn                      = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-backend-dev:1" -> (known after apply)
+      [33m~[0m[0m arn_without_revision     = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-backend-dev" -> (known after apply)
+      [33m~[0m[0m container_definitions    = jsonencode(
+          [33m~[0m[0m [
+              [33m~[0m[0m {
+                  [33m~[0m[0m environment      = [
+                      [33m~[0m[0m {
+                            name  = "APP_ENV"
+                          [33m~[0m[0m value = "dev" [33m->[0m[0m "prod"
+                        },
+                        {
+                            name  = "APP_NAME"
+                            value = "commander"
+                        },
+                        [90m# (1 unchanged element hidden)[0m[0m
+                    ]
+                  [33m~[0m[0m image            = "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-backend:dev-latest" [33m->[0m[0m "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-backend:prod-latest"
+                  [33m~[0m[0m logConfiguration = {
+                      [33m~[0m[0m options   = {
+                          [33m~[0m[0m awslogs-group         = "/px/dev/commander" [33m->[0m[0m "/px/prod/commander"
+                            [90m# (2 unchanged attributes hidden)[0m[0m
+                        }
+                        [90m# (1 unchanged attribute hidden)[0m[0m
+                    }
+                  [31m-[0m[0m mountPoints      = []
+                    name             = "backend"
+                  [33m~[0m[0m portMappings     = [
+                      [33m~[0m[0m {
+                          [31m-[0m[0m hostPort      = 8000
+                            [90m# (2 unchanged attributes hidden)[0m[0m
+                        },
+                    ]
+                  [31m-[0m[0m systemControls   = []
+                  [31m-[0m[0m volumesFrom      = []
+                    [90m# (2 unchanged attributes hidden)[0m[0m
+                },
+            ] [31m# forces replacement[0m[0m
+        )
+      [33m~[0m[0m enable_fault_injection   = false -> (known after apply)
+      [33m~[0m[0m execution_role_arn       = "arn:aws:iam::547456401969:role/px-ecs-exec-commander-dev" -> (known after apply) [31m# forces replacement[0m[0m
+      [33m~[0m[0m family                   = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod" [31m# forces replacement[0m[0m
+      [33m~[0m[0m id                       = "commander-backend-dev" -> (known after apply)
+      [33m~[0m[0m revision                 = 1 -> (known after apply)
+      [33m~[0m[0m tags                     = {
+          [33m~[0m[0m "Name"    = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                 = {
+          [33m~[0m[0m "Name"    = "commander-backend-dev" [33m->[0m[0m "commander-backend-prod"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+        [90m# (10 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_ecs_task_definition.frontend[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_ecs_task_definition" "frontend" {
+      [33m~[0m[0m arn                      = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-frontend-dev:1" -> (known after apply)
+      [33m~[0m[0m arn_without_revision     = "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-frontend-dev" -> (known after apply)
+      [33m~[0m[0m container_definitions    = jsonencode(
+          [33m~[0m[0m [
+              [33m~[0m[0m {
+                  [31m-[0m[0m environment      = []
+                  [33m~[0m[0m image            = "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-frontend:dev-latest" [33m->[0m[0m "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-frontend:prod-latest"
+                  [33m~[0m[0m logConfiguration = {
+                      [33m~[0m[0m options   = {
+                          [33m~[0m[0m awslogs-group         = "/px/dev/commander" [33m->[0m[0m "/px/prod/commander"
+                            [90m# (2 unchanged attributes hidden)[0m[0m
+                        }
+                        [90m# (1 unchanged attribute hidden)[0m[0m
+                    }
+                  [31m-[0m[0m mountPoints      = []
+                    name             = "frontend"
+                  [33m~[0m[0m portMappings     = [
+                      [33m~[0m[0m {
+                          [31m-[0m[0m hostPort      = 80
+                            [90m# (2 unchanged attributes hidden)[0m[0m
+                        },
+                    ]
+                  [31m-[0m[0m systemControls   = []
+                  [31m-[0m[0m volumesFrom      = []
+                    [90m# (2 unchanged attributes hidden)[0m[0m
+                },
+            ] [31m# forces replacement[0m[0m
+        )
+      [33m~[0m[0m enable_fault_injection   = false -> (known after apply)
+      [33m~[0m[0m execution_role_arn       = "arn:aws:iam::547456401969:role/px-ecs-exec-commander-dev" -> (known after apply) [31m# forces replacement[0m[0m
+      [33m~[0m[0m family                   = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod" [31m# forces replacement[0m[0m
+      [33m~[0m[0m id                       = "commander-frontend-dev" -> (known after apply)
+      [33m~[0m[0m revision                 = 1 -> (known after apply)
+      [33m~[0m[0m tags                     = {
+          [33m~[0m[0m "Name"    = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                 = {
+          [33m~[0m[0m "Name"    = "commander-frontend-dev" [33m->[0m[0m "commander-frontend-prod"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+        [90m# (10 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_iam_policy.app_boundary[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_iam_policy" "app_boundary" {
+        id               = "arn:aws:iam::547456401969:policy/px-app-boundary-commander"
+        name             = "px-app-boundary-commander"
+      [33m~[0m[0m tags             = {
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all         = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+        [90m# (7 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role.app_deploy[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_iam_role" "app_deploy" {
+        id                    = "px-deploy-commander"
+        name                  = "px-deploy-commander"
+      [33m~[0m[0m tags                  = {
+            "Name"    = "px-deploy-commander"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all              = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (11 unchanged attributes hidden)[0m[0m
+
+        [90m# (1 unchanged block hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role.ecs_task_execution[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_iam_role" "ecs_task_execution" {
+      [33m~[0m[0m arn                   = "arn:aws:iam::547456401969:role/px-ecs-exec-commander-dev" -> (known after apply)
+      [33m~[0m[0m create_date           = "2026-03-25T22:49:15Z" -> (known after apply)
+      [33m~[0m[0m id                    = "px-ecs-exec-commander-dev" -> (known after apply)
+      [33m~[0m[0m managed_policy_arns   = [
+          [31m-[0m[0m "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+        ] -> (known after apply)
+      [33m~[0m[0m name                  = "px-ecs-exec-commander-dev" [33m->[0m[0m "px-ecs-exec-commander-prod" [31m# forces replacement[0m[0m
+      [32m+[0m[0m name_prefix           = (known after apply)
+      [33m~[0m[0m tags                  = {
+          [33m~[0m[0m "Name"    = "px-ecs-exec-commander-dev" [33m->[0m[0m "px-ecs-exec-commander-prod"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all              = {
+          [33m~[0m[0m "Name"    = "px-ecs-exec-commander-dev" [33m->[0m[0m "px-ecs-exec-commander-prod"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (5 unchanged elements hidden)[0m[0m
+        }
+      [33m~[0m[0m unique_id             = "AROAX65XRYIY7BKXMPXLK" -> (known after apply)
+        [90m# (6 unchanged attributes hidden)[0m[0m
+
+      [33m~[0m[0m inline_policy (known after apply)
+      [31m-[0m[0m inline_policy {
+          [31m-[0m[0m name   = "px-secrets-commander-dev" [90m-> null[0m[0m
+          [31m-[0m[0m policy = jsonencode(
+                {
+                  [31m-[0m[0m Statement = [
+                      [31m-[0m[0m {
+                          [31m-[0m[0m Action   = [
+                              [31m-[0m[0m "secretsmanager:GetSecretValue",
+                            ]
+                          [31m-[0m[0m Effect   = "Allow"
+                          [31m-[0m[0m Resource = "arn:aws:secretsmanager:us-east-1:547456401969:secret:px/commander/*"
+                        },
+                    ]
+                  [31m-[0m[0m Version   = "2012-10-17"
+                }
+            ) [90m-> null[0m[0m
+        }
+    }
+
+[1m  # aws_iam_role_policy.app_deploy[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_iam_role_policy" "app_deploy" {
+        id          = "px-deploy-commander:px-deploy-policy-commander"
+        name        = "px-deploy-policy-commander"
+      [33m~[0m[0m policy      = jsonencode(
+            {
+              [31m-[0m[0m Statement = [
+                  [31m-[0m[0m {
+                      [31m-[0m[0m Action   = [
+                          [31m-[0m[0m "ecr:GetAuthorizationToken",
+                          [31m-[0m[0m "ecr:BatchCheckLayerAvailability",
+                          [31m-[0m[0m "ecr:GetDownloadUrlForLayer",
+                          [31m-[0m[0m "ecr:BatchGetImage",
+                          [31m-[0m[0m "ecr:PutImage",
+                          [31m-[0m[0m "ecr:InitiateLayerUpload",
+                          [31m-[0m[0m "ecr:UploadLayerPart",
+                          [31m-[0m[0m "ecr:CompleteLayerUpload",
+                        ]
+                      [31m-[0m[0m Effect   = "Allow"
+                      [31m-[0m[0m Resource = "arn:aws:ecr:us-east-1:547456401969:repository/commander"
+                    },
+                  [31m-[0m[0m {
+                      [31m-[0m[0m Action   = [
+                          [31m-[0m[0m "ecr:GetAuthorizationToken",
+                        ]
+                      [31m-[0m[0m Effect   = "Allow"
+                      [31m-[0m[0m Resource = "*"
+                    },
+                  [31m-[0m[0m {
+                      [31m-[0m[0m Action   = [
+                          [31m-[0m[0m "ecs:UpdateService",
+                          [31m-[0m[0m "ecs:DescribeServices",
+                          [31m-[0m[0m "ecs:RegisterTaskDefinition",
+                          [31m-[0m[0m "ecs:DescribeTaskDefinition",
+                        ]
+                      [31m-[0m[0m Effect   = "Allow"
+                      [31m-[0m[0m Resource = [
+                          [31m-[0m[0m "arn:aws:ecs:us-east-1:547456401969:service/px-dev-cluster/commander-dev",
+                          [31m-[0m[0m "arn:aws:ecs:us-east-1:547456401969:task-definition/commander:*",
+                        ]
+                    },
+                  [31m-[0m[0m {
+                      [31m-[0m[0m Action   = [
+                          [31m-[0m[0m "iam:PassRole",
+                        ]
+                      [31m-[0m[0m Effect   = "Allow"
+                      [31m-[0m[0m Resource = "arn:aws:iam::547456401969:role/px-ecs-exec-commander-dev"
+                    },
+                ]
+              [31m-[0m[0m Version   = "2012-10-17"
+            }
+        ) -> (known after apply)
+        [90m# (2 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role_policy.ecs_secrets[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_iam_role_policy" "ecs_secrets" {
+      [33m~[0m[0m id          = "px-ecs-exec-commander-dev:px-secrets-commander-dev" -> (known after apply)
+      [33m~[0m[0m name        = "px-secrets-commander-dev" [33m->[0m[0m "px-secrets-commander-prod" [31m# forces replacement[0m[0m
+      [32m+[0m[0m name_prefix = (known after apply)
+      [33m~[0m[0m role        = "px-ecs-exec-commander-dev" -> (known after apply) [31m# forces replacement[0m[0m
+        [90m# (1 unchanged attribute hidden)[0m[0m
+    }
+
+[1m  # aws_iam_role_policy_attachment.ecs_task_execution[0m must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
+      [33m~[0m[0m id         = "px-ecs-exec-commander-dev/arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy" -> (known after apply)
+      [33m~[0m[0m role       = "px-ecs-exec-commander-dev" [33m->[0m[0m "px-ecs-exec-commander-prod" [31m# forces replacement[0m[0m
+        [90m# (1 unchanged attribute hidden)[0m[0m
+    }
+
+[1m  # aws_lb.main[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_lb" "main" {
+        id                                                           = "arn:aws:elasticloadbalancing:us-east-1:547456401969:loadbalancer/app/px-apps-alb/fe61401719b86403"
+        name                                                         = "px-apps-alb"
+      [33m~[0m[0m tags                                                         = {
+            "Name"    = "px-apps-alb"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                                                     = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (27 unchanged attributes hidden)[0m[0m
+
+        [90m# (9 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_lb_target_group.backend[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_lb_target_group" "backend" {
+        id                                 = "arn:aws:elasticloadbalancing:us-east-1:547456401969:targetgroup/cmdr-be-dev/0b3538517770f111"
+        name                               = "cmdr-be-dev"
+      [33m~[0m[0m tags                               = {
+            "Name"    = "cmdr-be-dev-tg"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                           = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (19 unchanged attributes hidden)[0m[0m
+
+        [90m# (5 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_lb_target_group.frontend[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_lb_target_group" "frontend" {
+        id                                 = "arn:aws:elasticloadbalancing:us-east-1:547456401969:targetgroup/cmdr-fe-dev/865c22671c0a1b85"
+        name                               = "cmdr-fe-dev"
+      [33m~[0m[0m tags                               = {
+            "Name"    = "cmdr-fe-dev-tg"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all                           = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (19 unchanged attributes hidden)[0m[0m
+
+        [90m# (5 unchanged blocks hidden)[0m[0m
+    }
+
+[1m  # aws_security_group.ecs_tasks[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_security_group" "ecs_tasks" {
+        id                     = "sg-083eaab4538844e86"
+        name                   = "px-apps-ecs-tasks-sg"
+      [33m~[0m[0m tags                   = {
+            "Name"    = "px-apps-ecs-tasks-sg"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all               = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+    }
+
+[1m  # aws_security_group.lb[0m will be updated in-place
+[0m  [33m~[0m[0m resource "aws_security_group" "lb" {
+        id                     = "sg-076776d40a06c9506"
+        name                   = "px-apps-lb-sg"
+      [33m~[0m[0m tags                   = {
+            "Name"    = "px-apps-lb-sg"
+            "app"     = "commander"
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            "managed" = "terraform"
+            "owner"   = "Jtoro"
+            "project" = "project-x"
+            "type"    = "business"
+        }
+      [33m~[0m[0m tags_all               = {
+          [33m~[0m[0m "env"     = "dev" [33m->[0m[0m "prod"
+            [90m# (6 unchanged elements hidden)[0m[0m
+        }
+        [90m# (9 unchanged attributes hidden)[0m[0m
+    }
+
+[1mPlan:[0m [0m8 to add, 11 to change, 8 to destroy.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "tfplan"

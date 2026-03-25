@@ -1,28 +1,54 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# alb_ssl.tf — ALB Target Group + Listener Rule + Route 53 + ACM SSL
-# Owner: Tech Enablement
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Dedicated Load Balancer for PX Apps ───────────────────────────────────────
 
-# ── Reference existing shared ALB (Business apps only) ───────────────────────
-data "aws_lb" "shared" {
-  count = var.app_type == "business" ? 1 : 0
-  name  = "px-${var.env}-alb"
+resource "aws_lb" "main" {
+  name               = "px-apps-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.lb.id]
+  subnets            = data.aws_subnets.default.ids
+
+  tags = merge(local.common_tags, { Name = "px-apps-alb" })
 }
 
-data "aws_lb_listener" "https" {
-  count             = var.app_type == "business" ? 1 : 0
-  load_balancer_arn = data.aws_lb.shared[0].arn
-  port              = 443
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = "arn:aws:acm:us-east-1:547456401969:certificate/f54cfc40-f498-42b1-adcc-975b6bd5dce7"
+
+  default_action {
+    type = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "PX Platform Gateway - No Service Match"
+      status_code  = "404"
+    }
+  }
 }
 
 # ── Target Groups ─────────────────────────────────────────────────────────────
 
 resource "aws_lb_target_group" "backend" {
-  count       = var.app_type == "business" ? 1 : 0
-  name        = "${var.app_name}-be-${var.env}"
+  name        = "cmdr-be-dev"
   port        = var.backend_port
   protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.main[0].id
+  vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
 
   health_check {
@@ -33,15 +59,14 @@ resource "aws_lb_target_group" "backend" {
     matcher             = "200"
   }
 
-  tags = merge(local.common_tags, { Name = "${var.app_name}-be-${var.env}-tg" })
+  tags = merge(local.common_tags, { Name = "cmdr-be-dev-tg" })
 }
 
 resource "aws_lb_target_group" "frontend" {
-  count       = var.app_type == "business" ? 1 : 0
-  name        = "${var.app_name}-fe-${var.env}"
+  name        = "cmdr-fe-dev"
   port        = var.frontend_port
   protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.main[0].id
+  vpc_id      = data.aws_vpc.default.id
   target_type = "ip"
 
   health_check {
@@ -52,21 +77,14 @@ resource "aws_lb_target_group" "frontend" {
     matcher             = "200"
   }
 
-  tags = merge(local.common_tags, { Name = "${var.app_name}-fe-${var.env}-tg" })
+  tags = merge(local.common_tags, { Name = "cmdr-fe-dev-tg" })
 }
 
 # ── ALB Listener Rules ────────────────────────────────────────────────────────
 
 resource "aws_lb_listener_rule" "backend" {
-  count        = var.app_type == "business" ? 1 : 0
-  listener_arn = data.aws_lb_listener.https[0].arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 10
-
-  condition {
-    host_header {
-      values = [var.subdomain != "" ? var.subdomain : "${var.app_name}.pxltd.ca"]
-    }
-  }
 
   condition {
     path_pattern {
@@ -76,87 +94,36 @@ resource "aws_lb_listener_rule" "backend" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend[0].arn
+    target_group_arn = aws_lb_target_group.backend.id
   }
 }
 
 resource "aws_lb_listener_rule" "frontend" {
-  count        = var.app_type == "business" ? 1 : 0
-  listener_arn = data.aws_lb_listener.https[0].arn
+  listener_arn = aws_lb_listener.https.arn
   priority     = 20
 
   condition {
-    host_header {
-      values = [var.subdomain != "" ? var.subdomain : "${var.app_name}.pxltd.ca"]
+    path_pattern {
+      values = ["/*"]
     }
   }
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend[0].arn
+    target_group_arn = aws_lb_target_group.frontend.id
   }
 }
 
-# ── Route 53 ──────────────────────────────────────────────────────────────────
-data "aws_route53_zone" "pxltd" {
-  count        = var.app_type == "business" ? 1 : 0
-  name         = "pxltd.ca."
-  private_zone = false
-}
 
-resource "aws_route53_record" "app" {
-  count   = var.app_type == "business" && var.env == "prod" && var.subdomain != "" ? 1 : 0
-  zone_id = data.aws_route53_zone.pxltd[0].zone_id
-  name    = var.subdomain
-  type    = "A"
 
-  alias {
-    name                   = data.aws_lb.shared[0].dns_name
-    zone_id                = data.aws_lb.shared[0].zone_id
-    evaluate_target_health = true
-  }
-}
-
-# ── ACM Certificate ────────────────────────────────────────────────────────────
-resource "aws_acm_certificate" "app" {
-  count             = var.app_type == "business" && var.env == "prod" && var.subdomain != "" ? 1 : 0
-  domain_name       = var.subdomain
-  validation_method = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = merge(local.common_tags, {
-    Name = "${var.app_name}-ssl-cert"
-  })
-}
-
-resource "aws_route53_record" "acm_validation" {
-  for_each = {
-    for dvo in(length(aws_acm_certificate.app) > 0 ? aws_acm_certificate.app[0].domain_validation_options : []) :
-    dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  zone_id = data.aws_route53_zone.pxltd[0].zone_id
-  name    = each.value.name
-  type    = each.value.type
-  records = [each.value.record]
-  ttl     = 60
-}
-
-resource "aws_acm_certificate_validation" "app" {
-  count                   = length(aws_acm_certificate.app)
-  certificate_arn         = aws_acm_certificate.app[0].arn
-  validation_record_fqdns = [for record in aws_route53_record.acm_validation : record.fqdn]
-}
 
 # ── Outputs ────────────────────────────────────────────────────────────────────
+output "alb_dns_name" {
+  description = "DNS name of the application load balancer"
+  value       = aws_lb.main.dns_name
+}
+
 output "app_url" {
   description = "Application URL"
-  value       = var.app_type == "business" ? (var.env == "prod" && var.subdomain != "" ? "https://${var.subdomain}" : "http://${data.aws_lb.shared[0].dns_name}") : "No ALB available for Personal apps. Traffic served directly on ECS task Public IP."
+  value       = "https://${var.subdomain != "" ? var.subdomain : "commander.pxltd.ca"}"
 }
