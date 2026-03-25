@@ -28,9 +28,11 @@ from ml.forecasting import ForecastingEngine
 from ml.vendor_selection import VendorSelector
 from ml.risk_scoring import RiskPredictor
 from ai.rag_engine import RAGEngine, LLMProvider
+from auth.routes import router as auth_router
 
 
 app = FastAPI(title="Inventory Request System API")
+app.include_router(auth_router)
 
 # Configure CORS
 app.add_middleware(
