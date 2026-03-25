@@ -93,8 +93,10 @@ const UserManagement: React.FC = () => {
             )}
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                {/* REGESTRATION FORM */}
-                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                {/* LEFT COLUMN: REGISTRATION & PERMISSIONS */}
+                <div className="space-y-6 flex flex-col">
+                    {/* REGISTRATION FORM */}
+                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="p-2.5 bg-indigo-500/10 rounded-xl">
                             <UserPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -196,7 +198,38 @@ const UserManagement: React.FC = () => {
                     </form>
                 </div>
 
-                {/* USER DIRECTORY TABLE */}
+                {/* ROLE PERMISSIONS INFO */}
+                <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-200 mb-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5" />
+                        Role Permissions
+                    </h3>
+                    <ul className="space-y-4 text-sm text-indigo-800 dark:text-indigo-300">
+                        <li className="flex gap-3">
+                            <div className="mt-0.5 text-indigo-500">•</div>
+                            <div><strong className="block text-indigo-950 dark:text-indigo-100">Admin</strong> Has full access to all system features including user management.</div>
+                        </li>
+                        <li className="flex gap-3">
+                            <div className="mt-0.5 text-indigo-500">•</div>
+                            <div><strong className="block text-indigo-950 dark:text-indigo-100">Office</strong> Can manage purchase orders, vendors, and products.</div>
+                        </li>
+                        <li className="flex gap-3">
+                            <div className="mt-0.5 text-indigo-500">•</div>
+                            <div><strong className="block text-indigo-950 dark:text-indigo-100">Shop Floor</strong> Can view inventory and submit product requests.</div>
+                        </li>
+                        <li className="flex gap-3">
+                            <div className="mt-0.5 text-indigo-500">•</div>
+                            <div><strong className="block text-indigo-950 dark:text-indigo-100">Standard User</strong> Basic system access.</div>
+                        </li>
+                        <li className="flex gap-3">
+                            <div className="mt-0.5 text-indigo-500">•</div>
+                            <div><strong className="block text-indigo-950 dark:text-indigo-100">Read Only</strong> Can only view data, no modifications allowed.</div>
+                        </li>
+                    </ul>
+                </div>
+                </div>
+
+                {/* RIGHT COLUMN: USER DIRECTORY TABLE */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden flex flex-col h-[700px]">
                     <div className="flex items-center justify-between mb-6 shrink-0">
                         <div className="flex items-center gap-3">
