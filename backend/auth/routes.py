@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
+from typing import List
 from db.database import get_db_session
 from db.models.user import User
 from auth.utils import verify_password, get_password_hash, create_access_token
@@ -136,3 +137,46 @@ async def logout(current_user: User = Depends(get_current_user)):
     For enhanced security, implement token blacklisting.
     """
     return {"message": "Successfully logged out"}
+
+
+@router.get("/users", response_model=List[UserResponse])
+async def list_users(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session)
+):
+    """Get all registered users (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to view users"
+        )
+    return db.query(User).all()
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_session)
+):
+    """Delete a user account by ID (Admin only)"""
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete users"
+        )
+    
+    if current_user.user_id == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own active administrator account"
+        )
+        
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully", "user_id": user_id}
+
