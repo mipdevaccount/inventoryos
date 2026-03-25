@@ -35,4 +35,7 @@ Pillow>=10.0.0
 # torch>=2.0.0
 # tensorflow>=2.13.0
 openpyxl
-email-validator
+# Baseline Integration
+boto3>=1.34.0
+cryptography>=42.0.0
+PyYAML>=6.0.1
