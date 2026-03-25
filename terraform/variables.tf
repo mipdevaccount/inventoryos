@@ -114,6 +114,25 @@ variable "snowflake_warehouse" {
   default     = "PX_APP_WH"
 }
 
+variable "snowflake_user" {
+  description = "Snowflake user for provisioning"
+  type        = string
+  default     = ""
+}
+
+variable "snowflake_password" {
+  description = "Snowflake password (sensitive)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "snowflake_role" {
+  description = "Snowflake role for provisioning"
+  type        = string
+  default     = "ACCOUNTADMIN"
+}
+
 # ── Common tags applied to ALL resources ──────────────────────────────────────
 locals {
   common_tags = {
