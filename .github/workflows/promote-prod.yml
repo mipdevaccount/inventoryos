@@ -32,7 +32,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_PROD_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
@@ -46,11 +46,11 @@ jobs:
       - name: Tag and push Backend to ECR
         run: |
           docker tag commander-backend:prod-${{ github.sha }} \
-            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
+            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
           docker tag commander-backend:prod-${{ github.sha }} \
-            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-backend:latest
-          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
-          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-backend:latest
+            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-backend:latest
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-backend:latest
 
       # ----- Frontend Build & Push ------------------------------------------
       - name: Build Frontend Docker image
@@ -61,11 +61,11 @@ jobs:
       - name: Tag and push Frontend to ECR
         run: |
           docker tag commander-frontend:prod-${{ github.sha }} \
-            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
+            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
           docker tag commander-frontend:prod-${{ github.sha }} \
-            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-frontend:latest
-          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
-          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-frontend:latest
+            ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-frontend:latest
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
+          docker push ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-frontend:latest
 
 
       # ----- ECS Deployment - Backend ---------------------------------------
@@ -75,7 +75,7 @@ jobs:
         with:
           task-definition: backend/task-definition.json
           container-name: backend
-          image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
+          image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-backend:prod-${{ github.sha }}
 
       - name: Deploy Backend to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -92,7 +92,7 @@ jobs:
         with:
           task-definition: frontend/task-definition.json
           container-name: frontend
-          image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
+          image: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/prod/commander-frontend:prod-${{ github.sha }}
 
       - name: Deploy Frontend to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
