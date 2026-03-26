@@ -55,6 +55,9 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "APP_NAME", value = var.app_name },
         { name = "APP_ENV", value = var.env },
         { name = "APP_TYPE", value = var.app_type },
+        { name = "DATABASE_URL", value = "postgresql://commander:changeme@localhost:5432/commander_v3" },
+        { name = "SECRET_KEY", value = "your-secret-key-change-in-production" },
+        { name = "REDIS_URL", value = "redis://localhost:6379/0" }
       ]
 
       logConfiguration = {
@@ -72,6 +75,49 @@ resource "aws_ecs_task_definition" "backend" {
         timeout     = 10
         retries     = 3
         startPeriod = 15
+      }
+    },
+    {
+      name      = "postgres"
+      image     = "postgres:15-alpine"
+      essential = true
+      environment = [
+        { name = "POSTGRES_DB", value = "commander_v3" },
+        { name = "POSTGRES_USER", value = "commander" },
+        { name = "POSTGRES_PASSWORD", value = "changeme" }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "postgres"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD-SHELL", "pg_isready -U commander"]
+        interval    = 10
+        timeout     = 5
+        retries     = 5
+      }
+    },
+    {
+      name      = "redis"
+      image     = "redis:7-alpine"
+      essential = true
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "redis"
+        }
+      }
+      healthCheck = {
+        command     = ["CMD", "redis-cli", "ping"]
+        interval    = 10
+        timeout     = 3
+        retries     = 5
       }
     }
   ])
