@@ -31,7 +31,37 @@ from ai.rag_engine import RAGEngine, LLMProvider
 from auth.routes import router as auth_router
 
 
-app = FastAPI(title="Inventory Request System API")
+from contextlib import asynccontextmanager
+from db.database import SessionLocal
+from db.models.user import User
+from auth.utils import get_password_hash
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create admin user on startup if it doesn't exist
+    db = SessionLocal()
+    try:
+        existing_admin = db.query(User).filter(User.email == "admin@commander.com").first()
+        if not existing_admin:
+            print("Creating initial admin user...")
+            admin = User(
+                email="admin@commander.com",
+                password_hash=get_password_hash("admin123"),
+                full_name="System Administrator",
+                role="admin",
+                is_active=True
+            )
+            db.add(admin)
+            db.commit()
+            print("✓ Admin user created")
+    except Exception as e:
+        print(f"Error seeding admin: {e}")
+        db.rollback()
+    finally:
+        db.close()
+    yield
+
+app = FastAPI(title="Inventory Request System API", lifespan=lifespan)
 app.include_router(auth_router)
 
 @app.get("/health")
