@@ -17,6 +17,7 @@ redis>=5.0.0
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+email-validator
 
 # ML/AI
 prophet>=1.1.0
