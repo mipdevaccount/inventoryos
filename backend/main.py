@@ -32,12 +32,16 @@ from auth.routes import router as auth_router
 
 
 from contextlib import asynccontextmanager
-from db.database import SessionLocal
+from db.database import SessionLocal, engine, Base
 from db.models.user import User
 from auth.utils import get_password_hash
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create tables if they don't exist
+    print("Initializing database tables...")
+    Base.metadata.create_all(bind=engine)
+    
     # Create admin user on startup if it doesn't exist
     db = SessionLocal()
     try:
