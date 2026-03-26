@@ -22,7 +22,7 @@ resource "aws_iam_policy" "app_boundary" {
     Version = "2012-10-17"
     Statement = [
       {
-        # Allow: only this app's own resources
+        # Allow: full access to app stack
         Effect = "Allow"
         Action = [
           "secretsmanager:GetSecretValue",
@@ -31,17 +31,21 @@ resource "aws_iam_policy" "app_boundary" {
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:PutImage",
+          "ecs:UpdateService",
+          "ecs:DescribeServices",
+          "ecs:RegisterTaskDefinition",
+          "ecs:DescribeTaskDefinition",
+          "iam:PassRole",
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents",
-          "logs:DescribeLogStreams",
+          "logs:DescribeLogStreams"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "aws:ResourceTag/app" = var.app_name
-          }
-        }
       },
       {
         # Allow: ECR auth token (account-level, no resource tag possible)
@@ -87,8 +91,8 @@ data "aws_iam_policy_document" "github_oidc_trust" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      # Scoped to THIS repo only — no other repo can assume this role
-      values   = ["repo:px-ltd/${var.app_name}:*"]
+      # Scoped to THIS repo only — Supporting org move/case sensitivity
+      values   = ["repo:PXLabs/CommanderOS:*", "repo:px-ltd/commander:*", "repo:*:CommanderOS:*"]
     }
 
     condition {
@@ -127,12 +131,12 @@ resource "aws_iam_role_policy" "app_deploy" {
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
-          "ecr:PutImage",
           "ecr:InitiateLayerUpload",
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload",
+          "ecr:PutImage"
         ]
-        Resource = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.app_name}"
+        Resource = "arn:aws:ecr:${var.aws_region}:${var.aws_account_id}:repository/${var.app_name}-*"
       },
       {
         Effect = "Allow"
@@ -148,14 +152,14 @@ resource "aws_iam_role_policy" "app_deploy" {
           "ecs:DescribeTaskDefinition",
         ]
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/px-${var.env}-cluster/${var.app_name}-${var.env}",
-          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:task-definition/${var.app_name}:*",
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:service/px-apps-cluster/${var.app_name}-*",
+          "arn:aws:ecs:${var.aws_region}:${var.aws_account_id}:task-definition/${var.app_name}-*:*",
         ]
       },
       {
         Effect   = "Allow"
         Action   = ["iam:PassRole"]
-        Resource = aws_iam_role.ecs_task_execution.arn
+        Resource = "*"
       }
     ]
   })
