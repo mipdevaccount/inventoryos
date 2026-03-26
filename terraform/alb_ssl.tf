@@ -88,7 +88,7 @@ resource "aws_lb_listener_rule" "backend" {
 
   condition {
     path_pattern {
-      values = ["/api/*", "/docs", "/openapi.json", "/auth/*"]
+      values = ["/api/*", "/docs", "/openapi.json", "/auth/*", "/health"]
     }
   }
 
