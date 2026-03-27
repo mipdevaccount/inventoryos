@@ -33,6 +33,14 @@ resource "aws_cloudwatch_log_group" "app" {
 # ── ECS Task Definitions ──────────────────────────────────────────────────────
 
 resource "aws_ecs_task_definition" "backend" {
+  volume {
+    name = "efs-data"
+    efs_volume_configuration {
+      file_system_id     = "fs-0c456eb317a5be9cb"
+      root_directory     = "/"
+      transit_encryption = "ENABLED"
+    }
+  }
   family                   = "${var.app_name}-backend-${var.env}"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
@@ -58,7 +66,8 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "DATABASE_URL", value = "postgresql://commander:changeme@localhost:5432/commander_v3" },
         { name = "SECRET_KEY", value = "your-secret-key-change-in-production" },
         { name = "REDIS_URL", value = "redis://localhost:6379/0" },
-        { name = "ENVIRONMENT", value = "production" }
+        { name = "ENVIRONMENT", value = "production" },
+        { name = "ROOT_FIX", value = "v2" }
       ]
 
       mountPoints = [
@@ -89,6 +98,8 @@ resource "aws_ecs_task_definition" "backend" {
     {
       name      = "celery-worker"
       image     = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-backend:${var.env}-latest"
+      cpu       = 512
+      memory    = 512
       essential = true
       command   = ["celery", "-A", "celery_config", "worker", "--loglevel=info"]
       environment = [
@@ -115,6 +126,8 @@ resource "aws_ecs_task_definition" "backend" {
     {
       name      = "celery-beat"
       image     = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-backend:${var.env}-latest"
+      cpu       = 128
+      memory    = 256
       essential = true
       command   = ["celery", "-A", "celery_config", "beat", "--loglevel=info"]
       environment = [
@@ -183,13 +196,6 @@ resource "aws_ecs_task_definition" "backend" {
     }
   ])
 
-  volume {
-    name = "efs-data"
-    efs_volume_configuration {
-      file_system_id = "fs-0c456eb317a5be9cb"
-      root_directory = "/"
-    }
-  }
 
   tags = merge(local.common_tags, { Name = "${var.app_name}-backend-${var.env}" })
 }

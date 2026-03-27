@@ -1,0 +1,304 @@
+{
+    "taskDefinitionArn": "arn:aws:ecs:us-east-1:547456401969:task-definition/commander-backend-prod:4",
+    "containerDefinitions": [
+        {
+            "name": "backend",
+            "image": "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-backend:prod-latest",
+            "cpu": 0,
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "APP_ENV",
+                    "value": "prod"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://commander:changeme@localhost:5432/commander_v3"
+                },
+                {
+                    "name": "ENVIRONMENT",
+                    "value": "production"
+                },
+                {
+                    "name": "APP_NAME",
+                    "value": "commander"
+                },
+                {
+                    "name": "SECRET_KEY",
+                    "value": "your-secret-key-change-in-production"
+                },
+                {
+                    "name": "APP_TYPE",
+                    "value": "business"
+                },
+                {
+                    "name": "REDIS_URL",
+                    "value": "redis://localhost:6379/0"
+                }
+            ],
+            "mountPoints": [
+                {
+                    "sourceVolume": "efs-data",
+                    "containerPath": "/app/data",
+                    "readOnly": false
+                }
+            ],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/px/prod/commander",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "backend"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"
+                ],
+                "interval": 30,
+                "timeout": 10,
+                "retries": 3,
+                "startPeriod": 15
+            },
+            "systemControls": []
+        },
+        {
+            "name": "celery-worker",
+            "image": "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-backend:prod-latest",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "command": [
+                "celery",
+                "-A",
+                "celery_config",
+                "worker",
+                "--loglevel=info"
+            ],
+            "environment": [
+                {
+                    "name": "SECRET_KEY",
+                    "value": "your-secret-key-change-in-production"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://commander:changeme@localhost:5432/commander_v3"
+                },
+                {
+                    "name": "REDIS_URL",
+                    "value": "redis://localhost:6379/0"
+                }
+            ],
+            "mountPoints": [
+                {
+                    "sourceVolume": "efs-data",
+                    "containerPath": "/app/data",
+                    "readOnly": false
+                }
+            ],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/px/prod/commander",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "celery-worker"
+                }
+            },
+            "systemControls": []
+        },
+        {
+            "name": "celery-beat",
+            "image": "547456401969.dkr.ecr.us-east-1.amazonaws.com/commander-backend:prod-latest",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "command": [
+                "celery",
+                "-A",
+                "celery_config",
+                "beat",
+                "--loglevel=info"
+            ],
+            "environment": [
+                {
+                    "name": "SECRET_KEY",
+                    "value": "your-secret-key-change-in-production"
+                },
+                {
+                    "name": "DATABASE_URL",
+                    "value": "postgresql://commander:changeme@localhost:5432/commander_v3"
+                },
+                {
+                    "name": "REDIS_URL",
+                    "value": "redis://localhost:6379/0"
+                }
+            ],
+            "mountPoints": [
+                {
+                    "sourceVolume": "efs-data",
+                    "containerPath": "/app/data",
+                    "readOnly": false
+                }
+            ],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/px/prod/commander",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "celery-beat"
+                }
+            },
+            "systemControls": []
+        },
+        {
+            "name": "postgres",
+            "image": "postgres:15-alpine",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [
+                {
+                    "name": "POSTGRES_USER",
+                    "value": "commander"
+                },
+                {
+                    "name": "POSTGRES_PASSWORD",
+                    "value": "changeme"
+                },
+                {
+                    "name": "POSTGRES_DB",
+                    "value": "commander_v3"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/px/prod/commander",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "postgres"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD-SHELL",
+                    "pg_isready -U commander"
+                ],
+                "interval": 10,
+                "timeout": 5,
+                "retries": 5
+            },
+            "systemControls": []
+        },
+        {
+            "name": "redis",
+            "image": "redis:7-alpine",
+            "cpu": 0,
+            "portMappings": [],
+            "essential": true,
+            "environment": [],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/px/prod/commander",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "redis"
+                }
+            },
+            "healthCheck": {
+                "command": [
+                    "CMD",
+                    "redis-cli",
+                    "ping"
+                ],
+                "interval": 10,
+                "timeout": 3,
+                "retries": 5
+            },
+            "systemControls": []
+        }
+    ],
+    "family": "commander-backend-prod",
+    "executionRoleArn": "arn:aws:iam::547456401969:role/px-ecs-exec-commander-prod",
+    "networkMode": "awsvpc",
+    "revision": 4,
+    "volumes": [
+        {
+            "name": "efs-data",
+            "efsVolumeConfiguration": {
+                "fileSystemId": "fs-0c456eb317a5be9cb",
+                "rootDirectory": "/"
+            }
+        }
+    ],
+    "status": "INACTIVE",
+    "requiresAttributes": [
+        {
+            "name": "ecs.capability.execution-role-awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.ecr-auth"
+        },
+        {
+            "name": "ecs.capability.container-health-check"
+        },
+        {
+            "name": "ecs.capability.execution-role-ecr-pull"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+        },
+        {
+            "name": "ecs.capability.task-eni"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.24"
+        },
+        {
+            "name": "ecs.capability.efsAuth"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+        },
+        {
+            "name": "ecs.capability.efs"
+        },
+        {
+            "name": "com.amazonaws.ecs.capability.docker-remote-api.1.25"
+        }
+    ],
+    "placementConstraints": [],
+    "compatibilities": [
+        "EC2",
+        "FARGATE",
+        "MANAGED_INSTANCES"
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "512",
+    "memory": "1024",
+    "registeredAt": "2026-03-27T12:23:13.401000-04:00",
+    "deregisteredAt": "2026-03-27T13:27:43.441000-04:00",
+    "registeredBy": "arn:aws:iam::547456401969:user/Jtoro"
+}
