@@ -1,5 +1,5 @@
 # Frontend Dockerfile
-FROM node:18-alpine AS builder
+FROM public.ecr.aws/docker/library/node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM public.ecr.aws/nginx/nginx:stable-alpine
 
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
