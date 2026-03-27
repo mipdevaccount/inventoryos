@@ -23,9 +23,10 @@ COPY . .
 # Create data template for EFS seeding
 RUN cp -r data data_template
 
-# Create non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# Create application state directories
+RUN mkdir -p data data_template
+
+# HEALTHCHECK ...
 
 # Expose port
 EXPOSE 8000
