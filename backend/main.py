@@ -32,37 +32,59 @@ from auth.routes import router as auth_router
 
 
 from contextlib import asynccontextmanager
+import logging
+import time
 from db.database import SessionLocal, engine, Base
 from db.models.user import User
 from auth.utils import get_password_hash
 
+# Configure logging to ensure output is captured in CloudWatch
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables if they don't exist
-    print("Initializing database tables...")
-    Base.metadata.create_all(bind=engine)
+    # Retry logic for database connection (ensures sidecar is ready)
+    max_retries = 5
+    retry_delay = 5
     
-    # Create admin user on startup if it doesn't exist
-    db = SessionLocal()
-    try:
-        existing_admin = db.query(User).filter(User.email == "admin@commander.com").first()
-        if not existing_admin:
-            print("Creating initial admin user...")
-            admin = User(
-                email="admin@commander.com",
-                password_hash=get_password_hash("admin123"),
-                full_name="System Administrator",
-                role="admin",
-                is_active=True
-            )
-            db.add(admin)
-            db.commit()
-            print("✓ Admin user created")
-    except Exception as e:
-        print(f"Error seeding admin: {e}")
-        db.rollback()
-    finally:
-        db.close()
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Database initialization attempt {attempt + 1}/{max_retries}...")
+            # Create tables if they don't exist
+            Base.metadata.create_all(bind=engine)
+            
+            # Create admin user on startup if it doesn't exist
+            db = SessionLocal()
+            try:
+                existing_admin = db.query(User).filter(User.email == "admin@commander.com").first()
+                if not existing_admin:
+                    logger.info("Creating initial admin user...")
+                    admin = User(
+                        email="admin@commander.com",
+                        password_hash=get_password_hash("admin123"),
+                        full_name="System Administrator",
+                        role="admin",
+                        is_active=True
+                    )
+                    db.add(admin)
+                    db.commit()
+                    logger.info("✓ Admin user created")
+                else:
+                    logger.info("Admin user already exists")
+                break # Success!
+            finally:
+                db.close()
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"Database not ready yet ({e}). Retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to initialize database after {max_retries} attempts: {e}")
     yield
 
 app = FastAPI(title="Inventory Request System API", lifespan=lifespan)
