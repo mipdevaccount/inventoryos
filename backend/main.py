@@ -28,71 +28,63 @@ from ml.forecasting import ForecastingEngine
 from ml.vendor_selection import VendorSelector
 from ml.risk_scoring import RiskPredictor
 from ai.rag_engine import RAGEngine, LLMProvider
-from auth.routes import router as auth_router
 
 
-from contextlib import asynccontextmanager
 import logging
-import time
-from db.database import SessionLocal, engine, Base
-from db.models.user import User
-from auth.utils import get_password_hash
+import shutil
+from contextlib import asynccontextmanager
 
-# Configure logging to ensure output is captured in CloudWatch
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
-)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Retry logic for database connection (ensures sidecar is ready)
-    max_retries = 5
-    retry_delay = 5
+    # ── Database & Data Initialization ──────────────────────────────────────────
+    logger.info("Starting up...")
     
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Database initialization attempt {attempt + 1}/{max_retries}...")
-            # Create tables if they don't exist
-            Base.metadata.create_all(bind=engine)
-            
-            # Create admin user on startup if it doesn't exist
-            db = SessionLocal()
+    # 1. Seed data from template to EFS if missing
+    DATA_DIR = "/app/data"
+    TEMPLATE_DIR = "/app/data_template"
+    
+    if os.path.exists(TEMPLATE_DIR) and os.path.exists(DATA_DIR):
+        if not os.path.exists(os.path.join(DATA_DIR, "products.csv")):
+            logger.info("Initializing EFS with core CSV data...")
+            for file in os.listdir(TEMPLATE_DIR):
+                if file.endswith(".csv"):
+                    shutil.copy2(os.path.join(TEMPLATE_DIR, file), os.path.join(DATA_DIR, file))
+            logger.info("✓ Core CSV data initialized")
+        else:
+            logger.info("EFS already contains data, skipping seeding")
+    
+    # 2. Initialize Database Tables
+    try:
+        from db.database import engine, Base
+        import time
+        
+        # Retry loop for sidecar DB startup
+        retries = 5
+        while retries > 0:
             try:
-                existing_admin = db.query(User).filter(User.email == "admin@commander.com").first()
-                if not existing_admin:
-                    logger.info("Creating initial admin user...")
-                    admin = User(
-                        email="admin@commander.com",
-                        password_hash=get_password_hash("admin123"),
-                        full_name="System Administrator",
-                        role="admin",
-                        is_active=True
-                    )
-                    db.add(admin)
-                    db.commit()
-                    logger.info("✓ Admin user created")
-                else:
-                    logger.info("Admin user already exists")
-                break # Success!
-            finally:
-                db.close()
-        except Exception as e:
-            if attempt < max_retries - 1:
-                logger.warning(f"Database not ready yet ({e}). Retrying in {retry_delay}s...")
-                time.sleep(retry_delay)
-            else:
-                logger.error(f"Failed to initialize database after {max_retries} attempts: {e}")
+                Base.metadata.create_all(bind=engine)
+                logger.info("✓ Database tables initialized")
+                break
+            except Exception as e:
+                logger.warning(f"Database connection failed, retrying in 5s... ({retries} left)")
+                retries -= 1
+                time.sleep(5)
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+    
     yield
+    logger.info("Shutting down...")
 
 app = FastAPI(title="Inventory Request System API", lifespan=lifespan)
-app.include_router(auth_router)
 
+# Health check for ALB
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "v3.0.0-core"}
 
 # Configure CORS
 app.add_middleware(

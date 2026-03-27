@@ -57,7 +57,16 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "APP_TYPE", value = var.app_type },
         { name = "DATABASE_URL", value = "postgresql://commander:changeme@localhost:5432/commander_v3" },
         { name = "SECRET_KEY", value = "your-secret-key-change-in-production" },
-        { name = "REDIS_URL", value = "redis://localhost:6379/0" }
+        { name = "REDIS_URL", value = "redis://localhost:6379/0" },
+        { name = "ENVIRONMENT", value = "production" }
+      ]
+
+      mountPoints = [
+        {
+          sourceVolume  = "efs-data"
+          containerPath = "/app/data"
+          readOnly      = false
+        }
       ]
 
       logConfiguration = {
@@ -75,6 +84,58 @@ resource "aws_ecs_task_definition" "backend" {
         timeout     = 10
         retries     = 3
         startPeriod = 15
+      }
+    },
+    {
+      name      = "celery-worker"
+      image     = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-backend:${var.env}-latest"
+      essential = true
+      command   = ["celery", "-A", "celery_config", "worker", "--loglevel=info"]
+      environment = [
+        { name = "DATABASE_URL", value = "postgresql://commander:changeme@localhost:5432/commander_v3" },
+        { name = "REDIS_URL", value = "redis://localhost:6379/0" },
+        { name = "SECRET_KEY", value = "your-secret-key-change-in-production" }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "efs-data"
+          containerPath = "/app/data"
+          readOnly      = false
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "celery-worker"
+        }
+      }
+    },
+    {
+      name      = "celery-beat"
+      image     = "${var.aws_account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.app_name}-backend:${var.env}-latest"
+      essential = true
+      command   = ["celery", "-A", "celery_config", "beat", "--loglevel=info"]
+      environment = [
+        { name = "DATABASE_URL", value = "postgresql://commander:changeme@localhost:5432/commander_v3" },
+        { name = "REDIS_URL", value = "redis://localhost:6379/0" },
+        { name = "SECRET_KEY", value = "your-secret-key-change-in-production" }
+      ]
+      mountPoints = [
+        {
+          sourceVolume  = "efs-data"
+          containerPath = "/app/data"
+          readOnly      = false
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.app.name
+          "awslogs-region"        = var.aws_region
+          "awslogs-stream-prefix" = "celery-beat"
+        }
       }
     },
     {
@@ -121,6 +182,14 @@ resource "aws_ecs_task_definition" "backend" {
       }
     }
   ])
+
+  volume {
+    name = "efs-data"
+    efs_volume_configuration {
+      file_system_id = "fs-0c456eb317a5be9cb"
+      root_directory = "/"
+    }
+  }
 
   tags = merge(local.common_tags, { Name = "${var.app_name}-backend-${var.env}" })
 }
