@@ -1,0 +1,184 @@
+deploy	Set up job	﻿2026-03-27T16:00:25.4746624Z Current runner version: '2.333.0'
+deploy	Set up job	2026-03-27T16:00:25.4780700Z ##[group]Runner Image Provisioner
+deploy	Set up job	2026-03-27T16:00:25.4782139Z Hosted Compute Agent
+deploy	Set up job	2026-03-27T16:00:25.4783021Z Version: 20260213.493
+deploy	Set up job	2026-03-27T16:00:25.4784045Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+deploy	Set up job	2026-03-27T16:00:25.4785530Z Build Date: 2026-02-13T00:28:41Z
+deploy	Set up job	2026-03-27T16:00:25.4786703Z Worker ID: {615b5e2b-61db-4720-a27f-940d8fa3184a}
+deploy	Set up job	2026-03-27T16:00:25.4787838Z Azure Region: westus3
+deploy	Set up job	2026-03-27T16:00:25.4788912Z ##[endgroup]
+deploy	Set up job	2026-03-27T16:00:25.4791220Z ##[group]Operating System
+deploy	Set up job	2026-03-27T16:00:25.4792120Z Ubuntu
+deploy	Set up job	2026-03-27T16:00:25.4792937Z 24.04.4
+deploy	Set up job	2026-03-27T16:00:25.4793627Z LTS
+deploy	Set up job	2026-03-27T16:00:25.4794397Z ##[endgroup]
+deploy	Set up job	2026-03-27T16:00:25.4795496Z ##[group]Runner Image
+deploy	Set up job	2026-03-27T16:00:25.4796487Z Image: ubuntu-24.04
+deploy	Set up job	2026-03-27T16:00:25.4797244Z Version: 20260323.65.1
+deploy	Set up job	2026-03-27T16:00:25.4798902Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260323.65/images/ubuntu/Ubuntu2404-Readme.md
+deploy	Set up job	2026-03-27T16:00:25.4801746Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260323.65
+deploy	Set up job	2026-03-27T16:00:25.4803377Z ##[endgroup]
+deploy	Set up job	2026-03-27T16:00:25.4805267Z ##[group]GITHUB_TOKEN Permissions
+deploy	Set up job	2026-03-27T16:00:25.4807806Z Contents: read
+deploy	Set up job	2026-03-27T16:00:25.4808842Z Metadata: read
+deploy	Set up job	2026-03-27T16:00:25.4809764Z ##[endgroup]
+deploy	Set up job	2026-03-27T16:00:25.4812951Z Secret source: Actions
+deploy	Set up job	2026-03-27T16:00:25.4814194Z Prepare workflow directory
+deploy	Set up job	2026-03-27T16:00:25.5456993Z Prepare all required actions
+deploy	Set up job	2026-03-27T16:00:25.5515590Z Getting action download info
+deploy	Set up job	2026-03-27T16:00:26.2119767Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+deploy	Set up job	2026-03-27T16:00:26.3739964Z Download action repository 'aws-actions/configure-aws-credentials@v4' (SHA:7474bc4690e29a8392af63c5b98e7449536d5c3a)
+deploy	Set up job	2026-03-27T16:00:27.3117123Z Download action repository 'aws-actions/amazon-ecr-login@v2' (SHA:183a1442edf41672e66566b7fc560e297a290896)
+deploy	Set up job	2026-03-27T16:00:28.5033774Z Complete job name: deploy
+deploy	Checkout	﻿2026-03-27T16:00:28.5855085Z ##[group]Run actions/checkout@v4
+deploy	Checkout	2026-03-27T16:00:28.5856505Z with:
+deploy	Checkout	2026-03-27T16:00:28.5857207Z   repository: PXLabs/CommanderOS
+deploy	Checkout	2026-03-27T16:00:28.5858360Z   token: ***
+deploy	Checkout	2026-03-27T16:00:28.5859039Z   ssh-strict: true
+deploy	Checkout	2026-03-27T16:00:28.5859739Z   ssh-user: git
+deploy	Checkout	2026-03-27T16:00:28.5860445Z   persist-credentials: true
+deploy	Checkout	2026-03-27T16:00:28.5861257Z   clean: true
+deploy	Checkout	2026-03-27T16:00:28.5861976Z   sparse-checkout-cone-mode: true
+deploy	Checkout	2026-03-27T16:00:28.5862860Z   fetch-depth: 1
+deploy	Checkout	2026-03-27T16:00:28.5863543Z   fetch-tags: false
+deploy	Checkout	2026-03-27T16:00:28.5864260Z   show-progress: true
+deploy	Checkout	2026-03-27T16:00:28.5865378Z   lfs: false
+deploy	Checkout	2026-03-27T16:00:28.5866095Z   submodules: false
+deploy	Checkout	2026-03-27T16:00:28.5866826Z   set-safe-directory: true
+deploy	Checkout	2026-03-27T16:00:28.5867955Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:28.7068741Z Syncing repository: PXLabs/CommanderOS
+deploy	Checkout	2026-03-27T16:00:28.7072550Z ##[group]Getting Git version info
+deploy	Checkout	2026-03-27T16:00:28.7074729Z Working directory is '/home/runner/work/CommanderOS/CommanderOS'
+deploy	Checkout	2026-03-27T16:00:28.7079047Z [command]/usr/bin/git version
+deploy	Checkout	2026-03-27T16:00:28.7081122Z git version 2.53.0
+deploy	Checkout	2026-03-27T16:00:28.7107922Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:28.7122412Z Temporarily overriding HOME='/home/runner/work/_temp/66105691-0d20-41d9-8afe-e1390447dd9f' before making global git config changes
+deploy	Checkout	2026-03-27T16:00:28.7137715Z Adding repository directory to the temporary git global config as a safe directory
+deploy	Checkout	2026-03-27T16:00:28.7142600Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CommanderOS/CommanderOS
+deploy	Checkout	2026-03-27T16:00:28.7185187Z Deleting the contents of '/home/runner/work/CommanderOS/CommanderOS'
+deploy	Checkout	2026-03-27T16:00:28.7188993Z ##[group]Initializing the repository
+deploy	Checkout	2026-03-27T16:00:28.7192330Z [command]/usr/bin/git init /home/runner/work/CommanderOS/CommanderOS
+deploy	Checkout	2026-03-27T16:00:28.7269380Z hint: Using 'master' as the name for the initial branch. This default branch name
+deploy	Checkout	2026-03-27T16:00:28.7272816Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+deploy	Checkout	2026-03-27T16:00:28.7276523Z hint: to use in all of your new repositories, which will suppress this warning,
+deploy	Checkout	2026-03-27T16:00:28.7277929Z hint: call:
+deploy	Checkout	2026-03-27T16:00:28.7278548Z hint:
+deploy	Checkout	2026-03-27T16:00:28.7279380Z hint: 	git config --global init.defaultBranch <name>
+deploy	Checkout	2026-03-27T16:00:28.7280455Z hint:
+deploy	Checkout	2026-03-27T16:00:28.7281439Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+deploy	Checkout	2026-03-27T16:00:28.7283154Z hint: 'development'. The just-created branch can be renamed via this command:
+deploy	Checkout	2026-03-27T16:00:28.7284478Z hint:
+deploy	Checkout	2026-03-27T16:00:28.7285418Z hint: 	git branch -m <name>
+deploy	Checkout	2026-03-27T16:00:28.7286209Z hint:
+deploy	Checkout	2026-03-27T16:00:28.7287297Z hint: Disable this message with "git config set advice.defaultBranchName false"
+deploy	Checkout	2026-03-27T16:00:28.7289196Z Initialized empty Git repository in /home/runner/work/CommanderOS/CommanderOS/.git/
+deploy	Checkout	2026-03-27T16:00:28.7296677Z [command]/usr/bin/git remote add origin https://github.com/PXLabs/CommanderOS
+deploy	Checkout	2026-03-27T16:00:28.7332603Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:28.7337155Z ##[group]Disabling automatic garbage collection
+deploy	Checkout	2026-03-27T16:00:28.7342945Z [command]/usr/bin/git config --local gc.auto 0
+deploy	Checkout	2026-03-27T16:00:28.7370716Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:28.7372669Z ##[group]Setting up auth
+deploy	Checkout	2026-03-27T16:00:28.7377237Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy	Checkout	2026-03-27T16:00:28.7412793Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy	Checkout	2026-03-27T16:00:28.7697539Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy	Checkout	2026-03-27T16:00:28.7730778Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy	Checkout	2026-03-27T16:00:28.7967289Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy	Checkout	2026-03-27T16:00:28.8008750Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy	Checkout	2026-03-27T16:00:28.8241998Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+deploy	Checkout	2026-03-27T16:00:28.8278620Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:28.8282241Z ##[group]Fetching the repository
+deploy	Checkout	2026-03-27T16:00:28.8291355Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +4a9d60b1d38ae10a415d8d461734f25a21b3b942:refs/remotes/origin/main
+deploy	Checkout	2026-03-27T16:00:29.4233707Z From https://github.com/PXLabs/CommanderOS
+deploy	Checkout	2026-03-27T16:00:29.4234618Z  * [new ref]         4a9d60b1d38ae10a415d8d461734f25a21b3b942 -> origin/main
+deploy	Checkout	2026-03-27T16:00:29.4275538Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:29.4276243Z ##[group]Determining the checkout info
+deploy	Checkout	2026-03-27T16:00:29.4276936Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:29.4277395Z [command]/usr/bin/git sparse-checkout disable
+deploy	Checkout	2026-03-27T16:00:29.4318252Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+deploy	Checkout	2026-03-27T16:00:29.4346308Z ##[group]Checking out the ref
+deploy	Checkout	2026-03-27T16:00:29.4365865Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+deploy	Checkout	2026-03-27T16:00:29.4516082Z Switched to a new branch 'main'
+deploy	Checkout	2026-03-27T16:00:29.4519271Z branch 'main' set up to track 'origin/main'.
+deploy	Checkout	2026-03-27T16:00:29.4528917Z ##[endgroup]
+deploy	Checkout	2026-03-27T16:00:29.4566705Z [command]/usr/bin/git log -1 --format=%H
+deploy	Checkout	2026-03-27T16:00:29.4590563Z 4a9d60b1d38ae10a415d8d461734f25a21b3b942
+deploy	Configure AWS Credentials	﻿2026-03-27T16:00:29.4836209Z ##[group]Run aws-actions/configure-aws-credentials@v4
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4836568Z with:
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4836842Z   role-to-assume: arn:aws:iam::547456401969:role/px-deploy-commander
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4837193Z   aws-region: us-east-1
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4837408Z   audience: sts.amazonaws.com
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4837659Z   output-env-credentials: true
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.4837884Z ##[endgroup]
+deploy	Configure AWS Credentials	2026-03-27T16:00:29.9045495Z Assuming role with OIDC
+deploy	Configure AWS Credentials	2026-03-27T16:00:30.2029163Z Authenticated as assumedRoleId AROAX65XRYIY3UR4XEYAW:GitHubActions
+deploy	Login to Amazon ECR	﻿2026-03-27T16:00:30.2892456Z ##[group]Run aws-actions/amazon-ecr-login@v2
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2892785Z with:
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2892979Z   mask-password: true
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2893203Z   registry-type: private
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2958263Z   skip-logout: false
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2958606Z env:
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2958897Z   AWS_DEFAULT_REGION: us-east-1
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2959379Z   AWS_REGION: us-east-1
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2960022Z   AWS_ACCESS_KEY_ID: ***
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2960635Z   AWS_SECRET_ACCESS_KEY: ***
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2973067Z   AWS_SESSION_TOKEN: ***
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.2973506Z ##[endgroup]
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.4098542Z Using environment variable credentials.
+deploy	Login to Amazon ECR	2026-03-27T16:00:30.7185597Z Logging into registry 547456401969.dkr.ecr.us-east-1.amazonaws.com
+deploy	Build, Tag, and Push (Backend)	﻿2026-03-27T16:00:31.3021548Z ##[group]Run docker build -t $ECR_REGISTRY/commander-backend:prod-latest ./backend
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3022206Z [36;1mdocker build -t $ECR_REGISTRY/commander-backend:prod-latest ./backend[0m
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3022684Z [36;1mdocker push $ECR_REGISTRY/commander-backend:prod-latest[0m
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3051694Z shell: /usr/bin/bash -e {0}
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3051959Z env:
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3052156Z   AWS_DEFAULT_REGION: us-east-1
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3052403Z   AWS_REGION: us-east-1
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3052716Z   AWS_ACCESS_KEY_ID: ***
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3053037Z   AWS_SECRET_ACCESS_KEY: ***
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3059368Z   AWS_SESSION_TOKEN: ***
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3059673Z   ECR_REGISTRY: 547456401969.dkr.ecr.us-east-1.amazonaws.com
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.3059980Z ##[endgroup]
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.5690473Z #0 building with "default" instance using docker driver
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.5694769Z 
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.5700220Z #1 [internal] load build definition from Dockerfile
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.7405818Z #1 transferring dockerfile: 922B done
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.7407084Z #1 DONE 0.0s
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.7408206Z 
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.7408863Z #2 [internal] load metadata for docker.io/library/python:3.11-slim
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.9121021Z #2 ...
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.9121831Z 
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.9124142Z #3 [auth] library/python:pull token for registry-1.docker.io
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:31.9125089Z #3 DONE 0.0s
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0080799Z 
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0084638Z #2 [internal] load metadata for docker.io/library/python:3.11-slim
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0090914Z #2 ERROR: failed to authorize: failed to fetch oauth token: unexpected status from GET request to https://auth.docker.io/token?scope=repository%3Alibrary%2Fpython%3Apull&service=registry.docker.io: 401 Unauthorized: incorrect username or password
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0233886Z ------
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0234588Z  > [internal] load metadata for docker.io/library/python:3.11-slim:
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0235348Z ------
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0266462Z Dockerfile:2
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0268179Z --------------------
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0269158Z    1 |     # Backend Dockerfile
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0287031Z    2 | >>> FROM python:3.11-slim
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0288891Z    3 |     
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0290709Z    4 |     # Set working directory
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0292505Z --------------------
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0296670Z ERROR: failed to build: failed to solve: python:3.11-slim: failed to resolve source metadata for docker.io/library/python:3.11-slim: failed to authorize: failed to fetch oauth token: unexpected status from GET request to https://auth.docker.io/token?scope=repository%3Alibrary%2Fpython%3Apull&service=registry.docker.io: 401 Unauthorized: incorrect username or password
+deploy	Build, Tag, and Push (Backend)	2026-03-27T16:00:32.0377955Z ##[error]Process completed with exit code 1.
+deploy	Post Login to Amazon ECR	﻿2026-03-27T16:00:32.0485132Z Post job cleanup.
+deploy	Post Login to Amazon ECR	2026-03-27T16:00:32.1142289Z Logging out of registry 547456401969.dkr.ecr.us-east-1.amazonaws.com
+deploy	Post Configure AWS Credentials	﻿2026-03-27T16:00:32.1446825Z Post job cleanup.
+deploy	Post Checkout	﻿2026-03-27T16:00:32.2828430Z Post job cleanup.
+deploy	Post Checkout	2026-03-27T16:00:32.3766796Z [command]/usr/bin/git version
+deploy	Post Checkout	2026-03-27T16:00:32.3807263Z git version 2.53.0
+deploy	Post Checkout	2026-03-27T16:00:32.3855144Z Temporarily overriding HOME='/home/runner/work/_temp/3509bdb5-95c6-4ee8-831a-2c7a9c9c2687' before making global git config changes
+deploy	Post Checkout	2026-03-27T16:00:32.3856692Z Adding repository directory to the temporary git global config as a safe directory
+deploy	Post Checkout	2026-03-27T16:00:32.3862370Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/CommanderOS/CommanderOS
+deploy	Post Checkout	2026-03-27T16:00:32.3908692Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+deploy	Post Checkout	2026-03-27T16:00:32.3944604Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+deploy	Post Checkout	2026-03-27T16:00:32.4179200Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+deploy	Post Checkout	2026-03-27T16:00:32.4203334Z http.https://github.com/.extraheader
+deploy	Post Checkout	2026-03-27T16:00:32.4216880Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+deploy	Post Checkout	2026-03-27T16:00:32.4251216Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+deploy	Post Checkout	2026-03-27T16:00:32.4479791Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+deploy	Post Checkout	2026-03-27T16:00:32.4513289Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+deploy	Complete job	﻿2026-03-27T16:00:32.4855320Z Cleaning up orphan processes
+deploy	Complete job	2026-03-27T16:00:32.5109333Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, aws-actions/configure-aws-credentials@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

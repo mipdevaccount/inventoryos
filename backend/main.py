@@ -30,10 +30,64 @@ from ml.forecasting import ForecastingEngine
 from ml.vendor_selection import VendorSelector
 from ml.risk_scoring import RiskPredictor
 from auth.routes import router as auth_router
+from ai.rag_engine import RAGEngine, LLMProvider
 
 
-app = FastAPI(title="Inventory Request System API")
-app.include_router(auth_router)
+import logging
+import shutil
+from contextlib import asynccontextmanager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── Database & Data Initialization ──────────────────────────────────────────
+    logger.info("Starting up...")
+    
+    # 1. Seed data from template to EFS if missing
+    DATA_DIR = "/app/data"
+    TEMPLATE_DIR = "/app/data_template"
+    
+    if os.path.exists(TEMPLATE_DIR) and os.path.exists(DATA_DIR):
+        if not os.path.exists(os.path.join(DATA_DIR, "products.csv")):
+            logger.info("Initializing EFS with core CSV data...")
+            for file in os.listdir(TEMPLATE_DIR):
+                if file.endswith(".csv"):
+                    shutil.copy2(os.path.join(TEMPLATE_DIR, file), os.path.join(DATA_DIR, file))
+            logger.info("✓ Core CSV data initialized")
+        else:
+            logger.info("EFS already contains data, skipping seeding")
+    
+    # 2. Initialize Database Tables
+    try:
+        from db.database import engine, Base
+        import time
+        
+        # Retry loop for sidecar DB startup
+        retries = 5
+        while retries > 0:
+            try:
+                Base.metadata.create_all(bind=engine)
+                logger.info("✓ Database tables initialized")
+                break
+            except Exception as e:
+                logger.warning(f"Database connection failed, retrying in 5s... ({retries} left)")
+                retries -= 1
+                time.sleep(5)
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}")
+    
+    yield
+    logger.info("Shutting down...")
+
+app = FastAPI(title="Inventory Request System API", lifespan=lifespan)
+
+# Health check for ALB
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": "v3.0.0-core"}
 
 # Configure CORS
 app.add_middleware(
@@ -376,9 +430,7 @@ async def update_po_status_endpoint(po_number: str, status_update: POStatusUpdat
     return {"message": "PO status updated successfully"}
 
 
-# ============================================
 # V3 - REORDER RECOMMENDATIONS ENDPOINTS
-# ============================================
 
 # Mock recommendations for demonstration (ML pipeline is too slow for real-time)
 MOCK_RECOMMENDATIONS = [
@@ -503,9 +555,7 @@ async def create_po_from_recommendation(product_id: str):
         raise HTTPException(status_code=500, detail=f"Error creating PO: {str(e)}")
 
 
-# ============================================
 # V3 - RISK ASSESSMENT ENDPOINTS
-# ============================================
 
 @app.get("/api/v3/risk/po/{po_number}")
 async def get_po_risk_assessment(po_number: str):
@@ -595,9 +645,7 @@ async def get_at_risk_pos():
         raise HTTPException(status_code=500, detail=f"Error getting at-risk POs: {str(e)}")
 
 
-# ============================================
 # V3 - JOBS ENDPOINTS
-# ============================================
 
 @app.get("/api/v3/jobs")
 async def list_jobs(status: Optional[str] = None):
@@ -620,13 +668,9 @@ async def get_bom(job_id: str):
     return get_job_bom(job_id)
 
 
-# ============================================
 # V3 - AI ASSISTANT ENDPOINTS (DISABLED)
-# ============================================
 
-# ============================================
 # PROCUREMENT RULES & OPTIMIZATION INSIGHTS
-# ============================================
 
 @app.get("/api/rules")
 async def list_rules():

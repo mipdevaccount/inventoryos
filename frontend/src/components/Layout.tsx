@@ -11,12 +11,11 @@ import {
     Building2,
     FileText,
     BarChart3,
-    Users,
+    TrendingUp,
     Scale
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -25,7 +24,6 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
-    const { user, logout } = useAuth();
 
     const navItems = [
         { path: '/', label: 'Shop Floor', icon: ShoppingCart },
@@ -35,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/purchase-orders', label: 'Purchase Orders', icon: FileText },
         { path: '/reports', label: 'Reports', icon: BarChart3 },
         { path: '/ordering-rules', label: 'Ordering Rules', icon: Scale },
-        ...(user?.role === 'admin' ? [{ path: '/users', label: 'User Management', icon: Users }] : [])
+        { path: '/reorder-recommendations', label: 'Smart Reorder', icon: TrendingUp },
     ];
 
     return (
@@ -121,12 +119,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <div className="p-4 mt-auto">
                     <div className="p-4 rounded-2xl bg-gradient-to-br from-white/50 to-white/10 dark:from-white/5 dark:to-transparent border border-white/20 shadow-sm backdrop-blur-md">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-md uppercase">
-                                {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-md">
+                                U
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate capitalize">{user?.full_name || 'User Account'}</p>
-                                <p className="text-xs text-muted-foreground truncate">{user?.email || 'user@commander.com'}</p>
+                                <p className="text-sm font-semibold truncate">User Account</p>
+                                <p className="text-xs text-muted-foreground truncate">user@commander.com</p>
                             </div>
                         </div>
                         <div className="flex gap-2 mt-2">
@@ -134,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                                 <Settings size={14} />
                                 Settings
                             </button>
-                            <button onClick={logout} className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors">
+                            <button className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors">
                                 <LogOut size={14} />
                                 Logout
                             </button>
