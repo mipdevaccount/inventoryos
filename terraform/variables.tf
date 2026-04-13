@@ -133,6 +133,20 @@ variable "snowflake_role" {
   default     = "ACCOUNTADMIN"
 }
 
+# ── App Secrets ─────────────────────────────────────────────────────────────
+
+variable "db_password" {
+  description = "Password for the PostgreSQL database (sensitive)"
+  type        = string
+  sensitive   = true
+}
+
+variable "app_secret_key" {
+  description = "Secret key for JWT and session signing (sensitive)"
+  type        = string
+  sensitive   = true
+}
+
 # ── Common tags applied to ALL resources ──────────────────────────────────────
 locals {
   common_tags = {

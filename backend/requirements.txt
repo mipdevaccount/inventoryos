@@ -3,6 +3,8 @@ fastapi
 uvicorn
 pandas
 python-multipart
+email-validator
+pydantic[email]
 
 # Database
 sqlalchemy>=2.0.0

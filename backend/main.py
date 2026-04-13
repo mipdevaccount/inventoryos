@@ -104,6 +104,10 @@ class RuleCreate(BaseModel):
     discount_pct: float
     notes: str
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": "v3.0.0"}
+
 @app.get("/api/products")
 async def list_products(active_only: bool = True):
     df = get_all_products(active_only)
