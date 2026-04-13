@@ -25,10 +25,13 @@ def create_admin_user():
             print("⚠ Admin user already exists")
             return
         
+        # Read from environment variables to make it secure for Production!
+        admin_password = os.environ.get("ADMIN_PASSWORD", "admin123")
+
         # Create admin user
         admin = User(
             email="admin@commander.com",
-            password_hash=get_password_hash("admin123"),  # Change in production!
+            password_hash=get_password_hash(admin_password),
             full_name="System Administrator",
             role="admin",
             is_active=True
@@ -39,8 +42,7 @@ def create_admin_user():
         
         print("✓ Admin user created successfully")
         print("  Email: admin@commander.com")
-        print("  Password: admin123")
-        print("  ⚠ CHANGE THIS PASSWORD IN PRODUCTION!")
+        print(f"  Password: {'[Hidden from logs]' if os.environ.get('ADMIN_PASSWORD') else 'admin123 (Update immediately)'}")
         
     except Exception as e:
         print(f"✗ Error creating admin user: {e}")

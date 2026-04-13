@@ -1,11 +1,12 @@
 PRODUCT_ID,PRODUCT_NAME,DESCRIPTION,LOCATION,UNIT_OF_MEASURE,IS_ACTIVE,CREATED_AT
-PROD001,Steel Bolts 1/2",High-strength steel bolts,Aisle 3 Bin 12,box,True,2024-01-15 10:30:00
-PROD002,Hydraulic Oil SAE 10W,Premium hydraulic fluid,Storage Room A Shelf 5,each,True,2024-01-15 10:35:00
-PROD003,Safety Gloves Large,Cut-resistant work gloves,Safety Station 2,pair,True,2024-01-15 10:40:00
-PROD004,Welding Rods E7018,1/8 inch welding electrodes,Welding Bay Cabinet,box,True,2024-01-15 10:45:00
-PROD005,Shop Towels,Industrial cleaning towels,Maintenance Area Bin 3,roll,True,2024-01-15 10:50:00
-PROD006,Cable Ties 8 inch,Heavy duty nylon cable ties,Electrical Room Drawer 7,box,True,2024-01-20 09:15:00
-PROD007,Cutting Discs 4.5",Metal cutting discs for angle grinder,Tool Crib Station 4,box,True,2024-01-22 14:20:00
-PROD008,Thread Sealant Tape,PTFE tape for pipe threads,Plumbing Supplies Shelf 2,roll,True,2024-01-25 11:00:00
-PROD009,Spray Paint Black,High-temp industrial spray paint,Paint Storage Cabinet A,each,True,2024-02-01 08:30:00
-PROD010,Drill Bits Set,HSS drill bit set 1/16 to 1/2,Tool Crib Main Counter,set,True,2024-02-05 13:45:00
+PROD001,"Steel Bolts 1/2""",High-strength steel bolts,Aisle 3 Bin 12,box,True,2024-01-15 10:30
+PROD002,Hydraulic Oil SAE 10W,Premium hydraulic fluid,Storage Room A Shelf 5,each,True,2024-01-15 10:35
+PROD003,Safety Gloves Large,Cut-resistant work gloves,Safety Station 2,pair,True,2024-01-15 10:40
+PROD004,Welding Rods E7018,1/8 inch welding electrodes,Welding Bay Cabinet,box,True,2024-01-15 10:45
+PROD005,Shop Towels,Industrial cleaning towels,Maintenance Area Bin 3,roll,True,2024-01-15 10:50
+PROD006,Cable Ties 8 inch,Heavy duty nylon cable ties,Electrical Room Drawer 7,box,True,2024-01-20 9:15
+PROD007,"Cutting Discs 4.5""",Metal cutting discs for angle grinder,Tool Crib Station 4,box,True,2024-01-22 14:20
+PROD008,Thread Sealant Tape,PTFE tape for pipe threads,Plumbing Supplies Shelf 2,roll,True,2024-01-25 11:00
+PROD009,Spray Paint Black,High-temp industrial spray paint,Paint Storage Cabinet A,each,True,2024-02-01 8:30
+PROD010,Drill Bits Set,HSS drill bit set 1/16 to 1/2,Tool Crib Main Counter,set,True,2024-02-05 13:45
+PROD011,Shiny Ball Bearings,It's all ball bearings these days,Tool Crib Main Counter,box,True,2024-02-05 13:45

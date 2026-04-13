@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# app-config.yml — Baseline App Metadata
+# ─────────────────────────────────────────────────────────────────────────────
+# ┌─ DEVELOPER fills in this section ─────────────────────────────────────────┐
+# │ This file is read by TE during PROD approval.                              │
+# │ It is also read by Terraform to tag all AWS resources.                     │
+# └────────────────────────────────────────────────────────────────────────────┘
+
+# App identity
+app_name: "commander"
+app_type: "business"
+
+# Subdomain (business apps only — personal leave blank)
+subdomain: "commander.pxltd.ca"
+
+# Services definition (for multi-service apps)
+services:
+  - name: "backend"
+    port: 8000
+    path: "/api/*"
+  - name: "frontend"
+    port: 80
+    path: "/*"
+    is_default: true
+
+# App description
+description: "CommanderOS - Project X Management Dashboard"
+
+# Owner
+owner: "developer"
+
+# Framework
+framework: "fastapi/react"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ┌─ TE ONLY — do not edit below this line ────────────────────────────────────┐
+# │ TE manages SSO configuration during the PROD approval step.                │
+# └────────────────────────────────────────────────────────────────────────────┘
+
+sso_enabled: false                # TE sets this — do not edit
+sso_provider: azure_ad            # TE sets this — do not edit
+sso_allowed_groups: []            # Azure AD group object IDs — TE manages

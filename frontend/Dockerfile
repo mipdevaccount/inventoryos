@@ -1,5 +1,5 @@
 # Frontend Dockerfile
-FROM public.ecr.aws/docker/library/node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -10,6 +10,10 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Accept build arguments for environment variables
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 # Copy source code
 COPY . .
 
@@ -17,7 +21,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM public.ecr.aws/nginx/nginx:stable-alpine
+FROM nginx:stable-alpine
 
 # Copy built files
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -28,8 +32,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Expose port
 EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Health check (Standard Baseline pattern)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
 
 # Start nginx
