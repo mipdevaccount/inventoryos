@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException, Body
+from fastapi import FastAPI, HTTPException, Body, UploadFile, File
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
+import io
 import pandas as pd
 import sys
 import os
@@ -12,9 +14,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from utils.csv_data import (
     get_all_products, get_product_by_id, add_product, update_product,
     submit_request, get_all_requests, update_request_status, get_request_counts,
-    get_all_vendors, add_vendor, add_vendor_product, get_vendor_products,
-    create_purchase_order, get_all_pos, get_po_details, update_po_status,
-    get_vendor_by_id
+    get_all_vendors, add_vendor, update_vendor, add_vendor_product, get_vendor_products, get_all_vendor_products,
+    create_purchase_order, update_po, get_all_pos, get_po_details, update_po_status,
+    get_vendor_by_id, get_all_rules, add_rule, update_rule, get_optimization_insights
 )
 
 # V3 imports
@@ -27,7 +29,6 @@ from utils.v3_data import (
 from ml.forecasting import ForecastingEngine
 from ml.vendor_selection import VendorSelector
 from ml.risk_scoring import RiskPredictor
-from ai.rag_engine import RAGEngine, LLMProvider
 from auth.routes import router as auth_router
 
 
@@ -47,7 +48,6 @@ app.add_middleware(
 forecasting_engine = ForecastingEngine()
 vendor_selector = VendorSelector()
 risk_predictor = RiskPredictor()
-rag_engine = RAGEngine(llm_provider=LLMProvider.OPENAI)
 
 
 # Models
@@ -96,14 +96,47 @@ class POCreate(BaseModel):
 class POStatusUpdate(BaseModel):
     status: str
 
+class RuleCreate(BaseModel):
+    rule_id: str
+    vendor_id: str
+    product_id: str
+    min_qty: int
+    discount_pct: float
+    notes: str
+
 @app.get("/api/products")
 async def list_products(active_only: bool = True):
     df = get_all_products(active_only)
     if df.empty:
         return []
+        
+    for col in ['PRODUCT_NAME', 'LOCATION', 'UNIT_OF_MEASURE', 'PRODUCT_ID', 'DESCRIPTION']:
+        if col in df.columns:
+            df[col] = df[col].fillna('')
+            
     # Replace NaNs with None for JSON compatibility
     df = df.replace({float('nan'): None})
     return df.to_dict(orient="records")
+
+@app.get("/api/products/export")
+async def export_products():
+    from utils.csv_data import PRODUCTS_FILE
+    return FileResponse(PRODUCTS_FILE, media_type="text/csv", filename="products.csv")
+
+@app.post("/api/products/upload")
+async def upload_products(file: UploadFile = File(...)):
+    contents = await file.read()
+    df_new = pd.read_csv(io.BytesIO(contents))
+    from utils.csv_data import PRODUCTS_FILE, _read_products
+    df_existing = _read_products()
+    
+    # Fill NAs
+    df_new = df_new.fillna('')
+    
+    # Merge using concat and drop duplicates keeping the last (new)
+    df_combined = pd.concat([df_existing, df_new]).drop_duplicates(subset=['PRODUCT_ID'], keep='last')
+    df_combined.to_csv(PRODUCTS_FILE, index=False)
+    return {"message": "Success"}
 
 @app.get("/api/products/{product_id}")
 async def get_product(product_id: str):
@@ -129,6 +162,19 @@ async def create_product(product: ProductCreate):
         raise HTTPException(status_code=400, detail="Product ID already exists or error creating product")
     return {"message": "Product created successfully"}
 
+@app.put("/api/products/{product_id}")
+async def edit_product(product_id: str, product: ProductCreate):
+    success = update_product(
+        product_id,
+        product_name=product.product_name,
+        description=product.description,
+        location=product.location,
+        unit_of_measure=product.unit_of_measure
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Product not found or error updating")
+    return {"message": "Product updated successfully"}
+
 @app.get("/api/requests")
 async def list_requests(status: Optional[str] = None):
     df = get_all_requests(status)
@@ -138,7 +184,12 @@ async def list_requests(status: Optional[str] = None):
     df['SUBMITTED_AT'] = df['SUBMITTED_AT'].astype(str)
     df['UPDATED_AT'] = df['UPDATED_AT'].astype(str)
     
-    # Replace NaNs with None for JSON compatibility
+    # Provide default empty strings for critical frontend UI string fields
+    for col in ['PRODUCT_NAME', 'LOCATION', 'UNIT_OF_MEASURE', 'PRODUCT_ID', 'REQUESTED_BY', 'NOTES']:
+        if col in df.columns:
+            df[col] = df[col].fillna('')
+            
+    # Replace remaining NaNs with None for JSON compatibility
     df = df.replace({float('nan'): None})
     return df.to_dict(orient="records")
 
@@ -175,6 +226,23 @@ async def get_counts():
 async def list_vendors():
     return get_all_vendors()
 
+@app.get("/api/vendors/export")
+async def export_vendors():
+    from utils.csv_data import VENDORS_FILE
+    return FileResponse(VENDORS_FILE, media_type="text/csv", filename="vendors.csv")
+
+@app.post("/api/vendors/upload")
+async def upload_vendors(file: UploadFile = File(...)):
+    contents = await file.read()
+    df_new = pd.read_csv(io.BytesIO(contents))
+    from utils.csv_data import VENDORS_FILE, _read_vendors
+    df_existing = _read_vendors()
+    
+    df_new = df_new.fillna('')
+    df_combined = pd.concat([df_existing, df_new]).drop_duplicates(subset=['VENDOR_ID'], keep='last')
+    df_combined.to_csv(VENDORS_FILE, index=False)
+    return {"message": "Success"}
+
 @app.get("/api/vendors/{vendor_id}")
 async def get_vendor(vendor_id: str):
     vendor = get_vendor_by_id(vendor_id)
@@ -200,9 +268,31 @@ async def create_vendor(vendor: VendorCreate):
         raise HTTPException(status_code=400, detail="Vendor ID already exists or error creating vendor")
     return {"message": "Vendor created successfully"}
 
+@app.put("/api/vendors/{vendor_id}")
+async def edit_vendor(vendor_id: str, vendor: VendorCreate):
+    success = update_vendor(
+        vendor_id,
+        vendor_name=vendor.vendor_name,
+        contact_name=vendor.contact_name,
+        email=vendor.email,
+        phone=vendor.phone,
+        address=vendor.address
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Vendor not found or error updating")
+    return {"message": "Vendor updated successfully"}
+
 @app.get("/api/vendors/{vendor_id}/products")
 async def list_vendor_products(vendor_id: str):
     df = pd.DataFrame(get_vendor_products(vendor_id))
+    if df.empty:
+        return []
+    df = df.replace({float('nan'): None})
+    return df.to_dict(orient="records")
+
+@app.get("/api/vendor-products")
+async def list_all_vendor_products():
+    df = pd.DataFrame(get_all_vendor_products())
     if df.empty:
         return []
     df = df.replace({float('nan'): None})
@@ -239,7 +329,26 @@ async def create_po(po: POCreate):
     if not po_number:
         raise HTTPException(status_code=500, detail="Error creating purchase order")
         
+    # Auto-update pending requests
+    try:
+        pending_reqs_df = get_all_requests('pending')
+        if not pending_reqs_df.empty:
+            ordered_product_ids = {item['product_id'] for item in items_dict}
+            matches = pending_reqs_df[pending_reqs_df['PRODUCT_ID'].isin(ordered_product_ids)]
+            for _, row in matches.iterrows():
+                update_request_status(row['REQUEST_ID'], 'ordered', 'PO System')
+    except Exception as e:
+        print(f"Error auto-updating pending requests: {e}")
+        
     return {"message": "Purchase order created successfully", "po_number": po_number}
+
+@app.put("/api/purchase_orders/{po_number}")
+async def edit_po(po_number: str, po: POCreate):
+    items_dict = [item.dict() for item in po.items]
+    success = update_po(po_number, items_dict)
+    if not success:
+        raise HTTPException(status_code=404, detail="PO not found or error updating")
+    return {"message": "PO updated successfully"}
 
 @app.get("/api/purchase_orders/{po_number}")
 async def get_po(po_number: str):
@@ -512,36 +621,49 @@ async def get_bom(job_id: str):
 
 
 # ============================================
-# V3 - AI ASSISTANT ENDPOINTS
+# V3 - AI ASSISTANT ENDPOINTS (DISABLED)
 # ============================================
 
-class ChatMessage(BaseModel):
-    message: str
-    context: Optional[dict] = None
+# ============================================
+# PROCUREMENT RULES & OPTIMIZATION INSIGHTS
+# ============================================
 
+@app.get("/api/rules")
+async def list_rules():
+    return get_all_rules()
 
-@app.post("/api/v3/ai/chat")
-async def ai_chat(chat_msg: ChatMessage):
-    """Chat with AI assistant"""
+@app.post("/api/rules")
+async def create_rule(rule: RuleCreate):
+    success = add_rule(
+        rule.rule_id,
+        rule.vendor_id,
+        rule.product_id,
+        rule.min_qty,
+        rule.discount_pct,
+        rule.notes
+    )
+    if not success:
+        raise HTTPException(status_code=400, detail="Error creating rule")
+    return {"message": "Rule created"}
+
+@app.put("/api/rules/{rule_id}")
+async def edit_rule(rule_id: str, rule: RuleCreate):
+    success = update_rule(
+        rule_id,
+        rule.vendor_id,
+        rule.product_id,
+        rule.min_qty,
+        rule.discount_pct,
+        rule.notes
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Rule not found or could not be updated")
+    return {"message": "Rule updated"}
+
+@app.get("/api/optimization-insights/{vendor_id}/{product_id}")
+async def get_insights(vendor_id: str, product_id: str):
     try:
-        if not rag_engine.is_available():
-            return {
-                "response": "AI assistant is not configured. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable.",
-                "error": True
-            }
-        
-        response = rag_engine.query(
-            user_question=chat_msg.message,
-            context=chat_msg.context
-        )
-        
-        return {
-            "response": response,
-            "error": False
-        }
-        
+        insights = get_optimization_insights(vendor_id, product_id)
+        return insights
     except Exception as e:
-        return {
-            "response": f"Error: {str(e)}",
-            "error": True
-        }
+        raise HTTPException(status_code=500, detail=str(e))

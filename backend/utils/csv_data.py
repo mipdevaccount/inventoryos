@@ -49,8 +49,15 @@ def _read_products() -> pd.DataFrame:
                                      'LOCATION', 'UNIT_OF_MEASURE', 'IS_ACTIVE', 'CREATED_AT'])
     
     df = pd.read_csv(PRODUCTS_FILE)
-    df['CREATED_AT'] = pd.to_datetime(df['CREATED_AT'])
-    df['IS_ACTIVE'] = df['IS_ACTIVE'].astype(bool)
+    if 'CREATED_AT' in df.columns:
+        df['CREATED_AT'] = pd.to_datetime(df['CREATED_AT'])
+    else:
+        df['CREATED_AT'] = None
+        
+    if 'IS_ACTIVE' in df.columns:
+        df['IS_ACTIVE'] = df['IS_ACTIVE'].astype(bool)
+    else:
+        df['IS_ACTIVE'] = True
     return df
 
 
@@ -68,8 +75,16 @@ def _read_requests() -> pd.DataFrame:
                                      'SUBMITTED_AT', 'UPDATED_AT', 'UPDATED_BY'])
     
     df = pd.read_csv(REQUESTS_FILE)
-    df['SUBMITTED_AT'] = pd.to_datetime(df['SUBMITTED_AT'])
-    df['UPDATED_AT'] = pd.to_datetime(df['UPDATED_AT'])
+    if 'SUBMITTED_AT' in df.columns:
+        df['SUBMITTED_AT'] = pd.to_datetime(df['SUBMITTED_AT'])
+    else:
+        df['SUBMITTED_AT'] = None
+        
+    if 'UPDATED_AT' in df.columns:
+        df['UPDATED_AT'] = pd.to_datetime(df['UPDATED_AT'])
+    else:
+        df['UPDATED_AT'] = None
+        
     df['REQUEST_ID'] = df['REQUEST_ID'].astype(int)
     return df
 
@@ -425,6 +440,57 @@ def add_vendor(vendor_id: str, vendor_name: str, contact_name: str, email: str,
         return False
 
 
+def update_vendor(vendor_id: str, **kwargs) -> bool:
+    """
+    Update vendor fields
+    
+    Args:
+        vendor_id: Vendor ID to update
+        **kwargs: Fields to update (vendor_name, contact_name, email, phone, address)
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        df = _read_vendors()
+        
+        if df.empty or vendor_id not in df['VENDOR_ID'].values:
+            return False
+        
+        # Update fields
+        idx = df[df['VENDOR_ID'] == vendor_id].index[0]
+        
+        for key, value in kwargs.items():
+            column_name = key.upper()
+            if column_name in df.columns:
+                df.at[idx, column_name] = value
+        
+        _write_vendors(df)
+        return True
+    except Exception as e:
+        print(f"Error updating vendor: {e}")
+        return False
+
+
+def get_all_vendor_products() -> List[Dict]:
+    """Get all vendor products"""
+    df = _read_vendor_products()
+    if df.empty:
+        return []
+        
+    # Join with products to get product names
+    products_df = _read_products()
+    if not products_df.empty:
+        result = pd.merge(df, products_df[['PRODUCT_ID', 'PRODUCT_NAME']], on='PRODUCT_ID', how='left')
+    else:
+        result = df
+        result['PRODUCT_NAME'] = 'Unknown'
+        
+    # Replace NaN with appropriate defaults
+    result = result.fillna({'SKU_NUMBER': '', 'LEAD_TIME_DAYS': 0, 'PRODUCT_NAME': 'Unknown'})
+    
+    return result.to_dict(orient="records")
+
 def get_vendor_products(vendor_id: str) -> List[Dict]:
     """Get all products for a specific vendor with pricing"""
     vp_df = _read_vendor_products()
@@ -498,7 +564,10 @@ def _read_pos() -> pd.DataFrame:
         return pd.DataFrame(columns=['PO_NUMBER', 'VENDOR_ID', 'STATUS', 'TOTAL_AMOUNT', 'CREATED_AT'])
     
     df = pd.read_csv(POS_FILE)
-    df['CREATED_AT'] = pd.to_datetime(df['CREATED_AT'])
+    if 'CREATED_AT' in df.columns:
+        df['CREATED_AT'] = pd.to_datetime(df['CREATED_AT'])
+    else:
+        df['CREATED_AT'] = None
     return df
 
 
@@ -577,6 +646,48 @@ def create_purchase_order(vendor_id: str, items: List[Dict]) -> str:
     except Exception as e:
         print(f"Error creating PO: {e}")
         return ""
+
+
+def update_po(po_number: str, items: List[Dict]) -> bool:
+    """
+    Update PO items and recalculate total
+    """
+    try:
+        pos_df = _read_pos()
+        if pos_df.empty or po_number not in pos_df['PO_NUMBER'].values:
+            return False
+        
+        # Calculate new total
+        total_amount = sum(item['quantity'] * item['unit_price'] for item in items)
+        
+        # Update header total
+        idx = pos_df[pos_df['PO_NUMBER'] == po_number].index[0]
+        pos_df.at[idx, 'TOTAL_AMOUNT'] = total_amount
+        _write_pos(pos_df)
+        
+        po_items_df = _read_po_items()
+        
+        # Remove old items
+        if not po_items_df.empty:
+            po_items_df = po_items_df[po_items_df['PO_NUMBER'] != po_number]
+        else:
+            po_items_df = pd.DataFrame(columns=['PO_NUMBER', 'PRODUCT_ID', 'QUANTITY_ORDERED', 'UNIT_PRICE'])
+            
+        # Add new items
+        for item in items:
+            new_item = pd.DataFrame([{
+                'PO_NUMBER': po_number,
+                'PRODUCT_ID': item['product_id'],
+                'QUANTITY_ORDERED': item['quantity'],
+                'UNIT_PRICE': item['unit_price']
+            }])
+            po_items_df = pd.concat([po_items_df, new_item], ignore_index=True)
+            
+        _write_po_items(po_items_df)
+        return True
+    except Exception as e:
+        print(f"Error updating PO: {e}")
+        return False
 
 
 def get_all_pos() -> List[Dict]:
@@ -668,3 +779,132 @@ def update_po_status(po_number: str, status: str) -> bool:
     except Exception as e:
         print(f"Error updating PO status: {e}")
         return False
+
+# ============================================
+# ORDERING RULES & OPTIMIZATION INSIGHTS
+# ============================================
+
+RULES_FILE = os.path.join(DATA_DIR, 'vendor_product_rules.csv')
+
+def _read_rules() -> pd.DataFrame:
+    """Read ordering rules CSV file"""
+    if not os.path.exists(RULES_FILE):
+        return pd.DataFrame(columns=['RULE_ID', 'VENDOR_ID', 'PRODUCT_ID', 'MIN_QTY', 'DISCOUNT_PCT', 'NOTES'])
+    return pd.read_csv(RULES_FILE)
+
+def _write_rules(df: pd.DataFrame):
+    """Write ordering rules CSV file with locking"""
+    with file_lock(RULES_FILE):
+        df.to_csv(RULES_FILE, index=False)
+
+def get_all_rules() -> List[Dict]:
+    """Get all ordering rules including vendor and product details"""
+    df = _read_rules()
+    if df.empty:
+        return []
+    
+    # Left join with vendor products/products for context
+    vendors_df = _read_vendors()
+    if not vendors_df.empty:
+        df = df.merge(vendors_df[['VENDOR_ID', 'VENDOR_NAME']], on='VENDOR_ID', how='left')
+    else:
+        df['VENDOR_NAME'] = ''
+        
+    products_df = _read_products()
+    if not products_df.empty:
+        df = df.merge(products_df[['PRODUCT_ID', 'PRODUCT_NAME']], on='PRODUCT_ID', how='left')
+    else:
+        df['PRODUCT_NAME'] = ''
+        
+    df = df.fillna('')
+    return df.to_dict(orient='records')
+
+def add_rule(rule_id: str, vendor_id: str, product_id: str, min_qty: int, discount_pct: float, notes: str) -> bool:
+    """Add a new ordering rule"""
+    try:
+        df = _read_rules()
+        if not df.empty and rule_id in df['RULE_ID'].values:
+            return False
+            
+        new_row = pd.DataFrame([{
+            'RULE_ID': rule_id,
+            'VENDOR_ID': vendor_id,
+            'PRODUCT_ID': product_id,
+            'MIN_QTY': min_qty,
+            'DISCOUNT_PCT': discount_pct,
+            'NOTES': notes
+        }])
+        
+        df = pd.concat([df, new_row], ignore_index=True)
+        _write_rules(df)
+        return True
+    except Exception as e:
+        print(f"Error adding ordering rule: {e}")
+        return False
+
+def update_rule(rule_id: str, vendor_id: str, product_id: str, min_qty: int, discount_pct: float, notes: str) -> bool:
+    """Update an existing rule"""
+    try:
+        df = _read_rules()
+        if df.empty or rule_id not in df['RULE_ID'].values:
+            return False
+            
+        idx = df[df['RULE_ID'] == rule_id].index[0]
+        df.at[idx, 'VENDOR_ID'] = vendor_id
+        df.at[idx, 'PRODUCT_ID'] = product_id
+        df.at[idx, 'MIN_QTY'] = min_qty
+        df.at[idx, 'DISCOUNT_PCT'] = discount_pct
+        df.at[idx, 'NOTES'] = notes
+        
+        _write_rules(df)
+        return True
+    except Exception as e:
+        print(f"Error updating rule: {e}")
+        return False
+
+def get_optimization_insights(vendor_id: str, product_id: str) -> Dict:
+    """Get optimization insights for a vendor-product mapping"""
+    insights = {
+        "rule": None,
+        "history": {
+            "last_order_date": None,
+            "last_order_qty": 0,
+            "qty_past_90_days": 0
+        }
+    }
+    
+    # 1. Fetch matching rule (if any)
+    rules_df = _read_rules()
+    if not rules_df.empty:
+        match = rules_df[(rules_df['VENDOR_ID'] == vendor_id) & (rules_df['PRODUCT_ID'] == product_id)]
+        if not match.empty:
+            # fill nan
+            match = match.fillna('')
+            insights["rule"] = match.iloc[0].to_dict()
+            
+    # 2. Fetch history spanning recent POs
+    po_items_df = _read_po_items()
+    pos_df = _read_pos()
+    
+    if not po_items_df.empty and not pos_df.empty:
+        # Join items dict with pos_df to get dates and vendors
+        merged = pd.merge(po_items_df, pos_df, on='PO_NUMBER', how='inner')
+        # Filter down
+        filtered = merged[(merged['VENDOR_ID'] == vendor_id) & (merged['PRODUCT_ID'] == product_id)].copy()
+        
+        if not filtered.empty:
+            # We must convert to datetime explicitly to process time deltas
+            filtered['CREATED_AT'] = pd.to_datetime(filtered['CREATED_AT'])
+            # Sort newest first
+            filtered = filtered.sort_values('CREATED_AT', ascending=False)
+            
+            # The most recent order
+            insights["history"]["last_order_qty"] = int(filtered.iloc[0]['QUANTITY_ORDERED'])
+            insights["history"]["last_order_date"] = filtered.iloc[0]['CREATED_AT'].strftime("%Y-%m-%d")
+            
+            # Last 90 days
+            cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=90)
+            recent = filtered[filtered['CREATED_AT'] >= cutoff_date]
+            insights["history"]["qty_past_90_days"] = int(recent['QUANTITY_ORDERED'].sum())
+            
+    return insights

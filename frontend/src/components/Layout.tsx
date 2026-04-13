@@ -11,8 +11,8 @@ import {
     Building2,
     FileText,
     BarChart3,
-    TrendingUp,
-    Users
+    Users,
+    Scale
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/vendors', label: 'Vendors', icon: Building2 },
         { path: '/purchase-orders', label: 'Purchase Orders', icon: FileText },
         { path: '/reports', label: 'Reports', icon: BarChart3 },
-        { path: '/reorder-recommendations', label: 'Smart Reorder', icon: TrendingUp },
+        { path: '/ordering-rules', label: 'Ordering Rules', icon: Scale },
         ...(user?.role === 'admin' ? [{ path: '/users', label: 'User Management', icon: Users }] : [])
     ];
 

@@ -11,6 +11,7 @@ import VendorProfile from './pages/VendorProfile';
 import PurchaseOrders from './pages/PurchaseOrders';
 import PODetail from './pages/PODetail';
 import Reports from './pages/Reports';
+import OrderingRules from './pages/OrderingRules';
 import ReorderRecommendations from './pages/ReorderRecommendations';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
@@ -43,6 +44,7 @@ function App() {
                 <Route path="/purchase-orders" element={<PurchaseOrders />} />
                 <Route path="/purchase-orders/:poNumber" element={<PODetail />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/ordering-rules" element={<OrderingRules />} />
                 <Route path="/reorder-recommendations" element={<ReorderRecommendations />} />
               </Route>
             </Route>

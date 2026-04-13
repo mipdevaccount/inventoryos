@@ -1,15 +1,16 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPurchaseOrders, createPurchaseOrder, getVendors, getVendorProducts } from '../lib/api';
-import { Plus, Search, ChevronRight, FileText, X } from 'lucide-react';
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getPurchaseOrder, getVendors, getVendorProducts, getRequests, getAllVendorProducts, getOptimizationInsights } from '../lib/api';
+import { Plus, Search, ChevronRight, FileText, X, Pencil, Clock, Info, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
 const PurchaseOrders = () => {
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [poToEdit, setPoToEdit] = useState<any>(null);
 
     const { data: pos, isLoading } = useQuery({
         queryKey: ['purchaseOrders'],
@@ -107,13 +108,24 @@ const PurchaseOrders = () => {
                                             {format(new Date(po.CREATED_AT), 'MMM d, yyyy')}
                                         </td>
                                         <td className="py-4 px-6 text-right">
-                                            <Link
-                                                to={`/purchase-orders/${po.PO_NUMBER}`}
-                                                className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-                                            >
-                                                View
-                                                <ChevronRight size={16} />
-                                            </Link>
+                                            <div className="flex items-center justify-end gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setPoToEdit(po);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <Pencil size={16} />
+                                                </button>
+                                                <Link
+                                                    to={`/purchase-orders/${po.PO_NUMBER}`}
+                                                    className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+                                                >
+                                                    View
+                                                    <ChevronRight size={16} />
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -123,15 +135,89 @@ const PurchaseOrders = () => {
                 </div>
             </div>
 
-            <CreatePOModal
+            <POModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setPoToEdit(null);
+                }}
+                poToEdit={poToEdit}
             />
         </div>
     );
 };
 
-const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const POItemRow = ({ item, idx, vendorProducts, selectedVendor, handleUpdateQuantity, handleRemoveItem }: any) => {
+    const product = vendorProducts?.find((p: any) => p.PRODUCT_ID === item.product_id);
+    
+    // Fetch insights for this specific item and vendor combination
+    const { data: insights } = useQuery({
+        queryKey: ['insights', selectedVendor, item.product_id],
+        queryFn: () => getOptimizationInsights(selectedVendor, item.product_id),
+        enabled: !!selectedVendor && !!item.product_id,
+    });
+
+    // Check if the current quantity meets or exceeds the rule threshold
+    const discountActive = insights?.rule && item.quantity >= insights.rule.MIN_QTY;
+
+    // Apply discount logic visually (assuming discount_pct is something like 10)
+    const effectivePrice = discountActive && insights?.rule
+        ? item.unit_price * (1 - (insights.rule.DISCOUNT_PCT / 100))
+        : item.unit_price;
+
+    return (
+        <div key={idx} className={`flex flex-col gap-2 p-3 rounded-xl border transition-all ${discountActive ? 'bg-green-500/10 border-green-500/30' : 'bg-secondary/20 border-border/50'}`}>
+            <div className="flex items-center gap-4">
+                <div className="flex-1">
+                    <p className="font-medium">{product?.PRODUCT_NAME}</p>
+                    <div className="flex items-center gap-2">
+                        <p className={`text-xs ${discountActive ? 'text-green-600 dark:text-green-400 font-bold' : 'text-muted-foreground'}`}>
+                            ${effectivePrice.toFixed(2)} / {product?.UNIT_OF_MEASURE}
+                            {discountActive && ' (Discount Applied)'}
+                        </p>
+                        {!discountActive && effectivePrice !== item.unit_price && (
+                            <p className="text-xs text-muted-foreground line-through">${item.unit_price}</p>
+                        )}
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => handleUpdateQuantity(idx, parseInt(e.target.value) || 1)}
+                        className="w-20 px-3 py-1.5 rounded-lg border border-border bg-white dark:bg-slate-800 text-center"
+                    />
+                    <button onClick={() => handleRemoveItem(idx)} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+            </div>
+            {/* Optimization Insights Block */}
+            {insights && (insights.rule || insights.history.last_order_date) && (
+                <div className="mt-2 text-xs bg-black/5 dark:bg-white/5 rounded-lg p-2 flex flex-col gap-1.5 border border-border/30">
+                    <div className="flex items-center gap-1.5 font-semibold text-primary/80">
+                        <Info size={14} /> Optimization Insights
+                    </div>
+                    {insights.rule && (
+                        <div className="flex items-start gap-1.5 text-muted-foreground">
+                            <Tag size={12} className="mt-0.5 shrink-0" />
+                            <span>Rule active: Order {insights.rule.MIN_QTY}+ for {insights.rule.DISCOUNT_PCT}% off. {insights.rule.NOTES}</span>
+                        </div>
+                    )}
+                    {insights.history.last_order_date && (
+                        <div className="flex items-start gap-1.5 text-muted-foreground">
+                            <Clock size={12} className="mt-0.5 shrink-0" />
+                            <span>History: Last ordered {insights.history.last_order_qty} units on {insights.history.last_order_date}. (Total {insights.history.qty_past_90_days} in last 90 days).</span>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () => void; poToEdit?: any }) => {
     const [step, setStep] = useState(1);
     const [selectedVendor, setSelectedVendor] = useState('');
     const [items, setItems] = useState<{ product_id: string; quantity: number; unit_price: number }[]>([]);
@@ -149,14 +235,52 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
         enabled: !!selectedVendor,
     });
 
+    const { data: poDetails } = useQuery({
+        queryKey: ['poDetails', poToEdit?.PO_NUMBER],
+        queryFn: () => getPurchaseOrder(poToEdit.PO_NUMBER),
+        enabled: !!poToEdit,
+    });
+
+    const { data: pendingRequests } = useQuery({
+        queryKey: ['requests', 'pending'],
+        queryFn: () => getRequests('pending'),
+        enabled: !poToEdit && isOpen,
+    });
+
+    const { data: allVendorProducts } = useQuery({
+        queryKey: ['allVendorProducts'],
+        queryFn: getAllVendorProducts,
+        enabled: !poToEdit && pendingRequests && pendingRequests.length > 0 && isOpen,
+    });
+
+    useEffect(() => {
+        if (poToEdit && poDetails) {
+            setSelectedVendor(poToEdit.VENDOR_ID);
+            setStep(2);
+            if (poDetails.items) {
+                setItems(poDetails.items.map((i: any) => ({
+                    product_id: i.PRODUCT_ID,
+                    quantity: i.QUANTITY_ORDERED,
+                    unit_price: i.UNIT_PRICE
+                })));
+            }
+        } else if (!isOpen) {
+            setSelectedVendor('');
+            setStep(1);
+            setItems([]);
+        }
+    }, [poToEdit, poDetails, isOpen]);
+
     const mutation = useMutation({
-        mutationFn: createPurchaseOrder,
+        mutationFn: (data: any) => poToEdit ? updatePurchaseOrder(poToEdit.PO_NUMBER, data) : createPurchaseOrder(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
+            if (poToEdit) queryClient.invalidateQueries({ queryKey: ['purchaseOrder', poToEdit.PO_NUMBER] });
             onClose();
             setStep(1);
             setSelectedVendor('');
             setItems([]);
+            alert(`PO ${poToEdit ? 'updated' : 'created'} successfully!`);
         },
     });
 
@@ -209,7 +333,7 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                     <FileText size={20} />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">Create Purchase Order</h2>
+                                    <h2 className="text-xl font-bold">{poToEdit ? 'Edit Purchase Order' : 'Create Purchase Order'}</h2>
                                     <p className="text-muted-foreground text-sm font-medium">Step {step} of 2</p>
                                 </div>
                             </div>
@@ -222,6 +346,41 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                     <div className="p-8 pt-4 overflow-y-auto flex-1">
                         {step === 1 ? (
                             <div className="space-y-4">
+                                {!poToEdit && pendingRequests && pendingRequests.length > 0 && (
+                                    <div className="space-y-4 mb-8">
+                                        <label className="text-sm font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                                            <Clock size={16} /> Pending Requests
+                                        </label>
+                                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-amber-500/10 text-amber-700/70 dark:text-amber-500/70 text-xs uppercase">
+                                                    <tr>
+                                                        <th className="px-4 py-2 text-left">Product</th>
+                                                        <th className="px-4 py-2 text-left">Qty</th>
+                                                        <th className="px-4 py-2 text-left">Potential Vendors</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-amber-500/10">
+                                                    {pendingRequests.map(req => {
+                                                        const suppliers = allVendorProducts?.filter(vp => vp.PRODUCT_ID === req.PRODUCT_ID) || [];
+                                                        const vendorNames = suppliers.map(s => {
+                                                            const v = vendors?.find(vend => vend.VENDOR_ID === s.VENDOR_ID);
+                                                            return v ? v.VENDOR_NAME : s.VENDOR_ID;
+                                                        }).join(', ');
+                                                        
+                                                        return (
+                                                            <tr key={req.REQUEST_ID}>
+                                                                <td className="px-4 py-3 font-medium text-amber-900 dark:text-amber-100">{req.PRODUCT_NAME}</td>
+                                                                <td className="px-4 py-3 font-bold text-amber-700 dark:text-amber-400">{req.QUANTITY_NEEDED}</td>
+                                                                <td className="px-4 py-3 text-amber-700/70 dark:text-amber-400/70">{vendorNames || 'No vendors configured'}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
                                 <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Select Vendor</label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {vendors?.map(v => (
@@ -248,8 +407,41 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-bold text-lg">Add Items</h3>
-                                    <button onClick={() => setStep(1)} className="text-sm text-primary hover:underline">Change Vendor</button>
+                                    {!poToEdit && (
+                                        <button onClick={() => setStep(1)} className="text-sm text-primary hover:underline">Change Vendor</button>
+                                    )}
                                 </div>
+
+                                {!poToEdit && pendingRequests && pendingRequests.length > 0 && (
+                                    <div className="bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 flex items-center justify-between mt-4">
+                                        <div>
+                                            <p className="font-bold text-amber-700 dark:text-amber-500">Pending Requests Found</p>
+                                            <p className="text-sm text-amber-700/70 dark:text-amber-500/70">There are pending requests that this vendor can fulfill.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const newItems = [...items];
+                                                pendingRequests.forEach(req => {
+                                                    const vp = vendorProducts?.find(vProd => vProd.PRODUCT_ID === req.PRODUCT_ID);
+                                                    if (vp) {
+                                                        const existingIdx = newItems.findIndex(i => i.product_id === req.PRODUCT_ID);
+                                                        if (existingIdx >= 0) {
+                                                            newItems[existingIdx].quantity += req.QUANTITY_NEEDED;
+                                                        } else {
+                                                            newItems.push({
+                                                                product_id: req.PRODUCT_ID, quantity: req.QUANTITY_NEEDED, unit_price: vp.PRICE
+                                                            });
+                                                        }
+                                                    }
+                                                });
+                                                setItems(newItems);
+                                            }}
+                                            className="px-4 py-2 bg-amber-500 text-white rounded-lg font-semibold hover:bg-amber-600 transition-colors text-sm"
+                                        >
+                                            Auto-Fill Pending
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Available Products</label>
@@ -276,29 +468,17 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
-                                            {items.map((item, idx) => {
-                                                const product = vendorProducts?.find(p => p.PRODUCT_ID === item.product_id);
-                                                return (
-                                                    <div key={idx} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/20 border border-border/50">
-                                                        <div className="flex-1">
-                                                            <p className="font-medium">{product?.PRODUCT_NAME}</p>
-                                                            <p className="text-xs text-muted-foreground">${item.unit_price} / {product?.UNIT_OF_MEASURE}</p>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <input
-                                                                type="number"
-                                                                min="1"
-                                                                value={item.quantity}
-                                                                onChange={(e) => handleUpdateQuantity(idx, parseInt(e.target.value))}
-                                                                className="w-20 px-3 py-1.5 rounded-lg border border-border bg-white dark:bg-slate-800 text-center"
-                                                            />
-                                                            <button onClick={() => handleRemoveItem(idx)} className="p-2 hover:bg-red-500/10 text-red-500 rounded-lg transition-colors">
-                                                                <X size={16} />
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
+                                            {items.map((item, idx) => (
+                                                <POItemRow
+                                                    key={idx}
+                                                    item={item}
+                                                    idx={idx}
+                                                    vendorProducts={vendorProducts}
+                                                    selectedVendor={selectedVendor}
+                                                    handleUpdateQuantity={handleUpdateQuantity}
+                                                    handleRemoveItem={handleRemoveItem}
+                                                />
+                                            ))}
                                             <div className="flex justify-end pt-4 border-t border-border">
                                                 <p className="text-lg font-bold">
                                                     Total: ${items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2)}
@@ -324,7 +504,7 @@ const CreatePOModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                                 disabled={mutation.isPending || items.length === 0}
                                 className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
                             >
-                                {mutation.isPending ? 'Creating...' : 'Create PO'}
+                                {mutation.isPending ? 'Saving...' : poToEdit ? 'Save Changes' : 'Create PO'}
                             </button>
                         )}
                     </div>

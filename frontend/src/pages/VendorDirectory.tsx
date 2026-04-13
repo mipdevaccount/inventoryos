@@ -1,19 +1,41 @@
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getVendors, addVendor } from '../lib/api';
-import { Search, Plus, Building2, Phone, Mail, MapPin, X } from 'lucide-react';
+import { getVendors, addVendor, updateVendor, exportVendorsCSV, uploadVendorsCSV } from '../lib/api';
+import { Search, Plus, Building2, Phone, Mail, MapPin, X, Download, Upload, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const VendorDirectory = () => {
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [vendorToEdit, setVendorToEdit] = useState<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const queryClient = useQueryClient();
 
     const { data: vendors, isLoading } = useQuery({
         queryKey: ['vendors'],
         queryFn: getVendors,
     });
+
+    const uploadMutation = useMutation({
+        mutationFn: uploadVendorsCSV,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['vendors'] });
+            alert('Vendors uploaded successfully!');
+        },
+        onError: (e: any) => {
+            alert('Upload failed: ' + e.message);
+        }
+    });
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            uploadMutation.mutate(file);
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
 
     const filteredVendors = vendors?.filter(v =>
         v.VENDOR_NAME.toLowerCase().includes(search.toLowerCase()) ||
@@ -30,13 +52,32 @@ const VendorDirectory = () => {
                     <p className="text-muted-foreground text-lg">Manage suppliers and contact information.</p>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
-                >
-                    <Plus size={20} />
-                    Add Vendor
-                </button>
+                <div className="flex flex-wrap gap-3 justify-end items-center">
+                    <button
+                        onClick={exportVendorsCSV}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-slate-800/50 text-foreground border border-border/50 rounded-2xl font-semibold shadow-sm hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                    >
+                        <Download size={20} />
+                        Download CSV
+                    </button>
+                    <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadMutation.isPending}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-slate-800/50 text-foreground border border-border/50 rounded-2xl font-semibold shadow-sm hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
+                    >
+                        <Upload size={20} />
+                        {uploadMutation.isPending ? 'Uploading...' : 'Upload CSV'}
+                    </button>
+
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus size={20} />
+                        Add Vendor
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-sm">
@@ -63,7 +104,7 @@ const VendorDirectory = () => {
                     </div>
                 ) : (
                     filteredVendors?.map((vendor) => (
-                        <Link to={`/ vendors / ${vendor.VENDOR_ID} `} key={vendor.VENDOR_ID}>
+                        <Link to={`/vendors/${vendor.VENDOR_ID}`} key={vendor.VENDOR_ID}>
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -82,6 +123,18 @@ const VendorDirectory = () => {
                                                 <p className="text-xs text-muted-foreground font-mono mt-1">{vendor.VENDOR_ID}</p>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setVendorToEdit(vendor);
+                                                setIsModalOpen(true);
+                                            }}
+                                            className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                                            title="Edit Vendor"
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
                                     </div>
 
                                     <div className="space-y-3 pt-2">
@@ -119,15 +172,19 @@ const VendorDirectory = () => {
                 )}
             </div>
 
-            <AddVendorModal
+            <VendorModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setVendorToEdit(null);
+                }}
+                vendorToEdit={vendorToEdit}
             />
         </div>
     );
 };
 
-const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const VendorModal = ({ isOpen, onClose, vendorToEdit }: { isOpen: boolean; onClose: () => void; vendorToEdit?: any }) => {
     const [formData, setFormData] = useState({
         vendor_id: '',
         vendor_name: '',
@@ -137,10 +194,32 @@ const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         address: ''
     });
 
+    useEffect(() => {
+        if (vendorToEdit) {
+            setFormData({
+                vendor_id: vendorToEdit.VENDOR_ID || '',
+                vendor_name: vendorToEdit.VENDOR_NAME || '',
+                contact_name: vendorToEdit.CONTACT_NAME || '',
+                email: vendorToEdit.EMAIL || '',
+                phone: vendorToEdit.PHONE || '',
+                address: vendorToEdit.ADDRESS || ''
+            });
+        } else {
+            setFormData({
+                vendor_id: '',
+                vendor_name: '',
+                contact_name: '',
+                email: '',
+                phone: '',
+                address: ''
+            });
+        }
+    }, [vendorToEdit, isOpen]);
+
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: addVendor,
+        mutationFn: (data: any) => vendorToEdit ? updateVendor(vendorToEdit.VENDOR_ID, data) : addVendor(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vendors'] });
             onClose();
@@ -152,6 +231,7 @@ const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 phone: '',
                 address: ''
             });
+            alert(`Vendor ${vendorToEdit ? 'updated' : 'added'} successfully!`);
         },
     });
 
@@ -183,7 +263,7 @@ const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                                     <Building2 size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold">Add New Vendor</h2>
+                                    <h2 className="text-2xl font-bold">{vendorToEdit ? 'Edit Vendor' : 'Add New Vendor'}</h2>
                                     <p className="text-muted-foreground font-medium">Enter vendor details below.</p>
                                 </div>
                             </div>
@@ -198,8 +278,9 @@ const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                                 <input
                                     type="text"
                                     value={formData.vendor_id}
+                                    disabled={!!vendorToEdit}
                                     onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     placeholder="e.g., V-001"
                                 />
                             </div>
@@ -266,7 +347,7 @@ const AddVendorModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                                 disabled={mutation.isPending}
                                 className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
                             >
-                                {mutation.isPending ? 'Adding...' : 'Add Vendor'}
+                                {mutation.isPending ? 'Saving...' : vendorToEdit ? 'Save Changes' : 'Add Vendor'}
                             </button>
                         </div>
                     </div>

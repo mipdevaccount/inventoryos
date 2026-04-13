@@ -142,8 +142,39 @@ export const addProduct = async (data: {
     return response.data;
 };
 
+export const updateProduct = async (productId: string, data: {
+    product_id: string;
+    product_name: string;
+    description?: string;
+    location?: string;
+    unit_of_measure: string;
+}) => {
+    const response = await api.put(`/products/${productId}`, data);
+    return response.data;
+};
+
 export const getCounts = async () => {
     const response = await api.get<Record<string, number>>('/counts');
+    return response.data;
+};
+
+export const exportProductsCSV = async () => {
+    const response = await api.get('/products/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'products.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+};
+
+export const uploadProductsCSV = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/products/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
 };
 
@@ -211,8 +242,25 @@ export const addVendor = async (data: {
     return response.data;
 };
 
+export const updateVendor = async (vendorId: string, data: {
+    vendor_id: string;
+    vendor_name: string;
+    contact_name: string;
+    email: string;
+    phone: string;
+    address: string;
+}) => {
+    const response = await api.put(`/vendors/${vendorId}`, data);
+    return response.data;
+};
+
 export const getVendorProducts = async (vendorId: string) => {
     const response = await api.get<VendorProduct[]>(`/vendors/${vendorId}/products`);
+    return response.data;
+};
+
+export const getAllVendorProducts = async () => {
+    const response = await api.get<VendorProduct[]>('/vendor-products');
     return response.data;
 };
 
@@ -226,6 +274,26 @@ export const addVendorProduct = async (vendorId: string, data: {
     return response.data;
 };
 
+export const exportVendorsCSV = async () => {
+    const response = await api.get('/vendors/export', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'vendors.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+};
+
+export const uploadVendorsCSV = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/vendors/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
 export const getPurchaseOrders = async () => {
     const response = await api.get<PurchaseOrder[]>('/purchase_orders');
     return response.data;
@@ -236,6 +304,14 @@ export const createPurchaseOrder = async (data: {
     items: { product_id: string; quantity: number; unit_price: number }[];
 }) => {
     const response = await api.post('/purchase_orders', data);
+    return response.data;
+};
+
+export const updatePurchaseOrder = async (poNumber: string, data: {
+    vendor_id: string;
+    items: { product_id: string; quantity: number; unit_price: number }[];
+}) => {
+    const response = await api.put(`/purchase_orders/${poNumber}`, data);
     return response.data;
 };
 
@@ -321,11 +397,49 @@ export const getAtRiskPOs = async () => {
 };
 
 // ============================================
-// V3 - AI ASSISTANT
+// V3 - AI ASSISTANT (DISABLED)
 // ============================================
 
-export const chatWithAI = async (message: string, context?: any) => {
-    const response = await api.post('/v3/ai/chat', { message, context });
+// ============================================
+// PROCUREMENT RULES & OPTIMIZATION INSIGHTS
+// ============================================
+
+export interface OrderingRule {
+    RULE_ID: string;
+    VENDOR_ID: string;
+    PRODUCT_ID: string;
+    MIN_QTY: number;
+    DISCOUNT_PCT: number;
+    NOTES: string;
+    VENDOR_NAME?: string;
+    PRODUCT_NAME?: string;
+}
+
+export interface OptimizationInsight {
+    rule: null | OrderingRule;
+    history: {
+        last_order_date: string | null;
+        last_order_qty: number;
+        qty_past_90_days: number;
+    };
+}
+
+export const getRules = async () => {
+    const response = await api.get<OrderingRule[]>('/rules');
     return response.data;
 };
 
+export const createRule = async (data: any) => {
+    const response = await api.post('/rules', data);
+    return response.data;
+};
+
+export const updateRule = async (ruleId: string, data: any) => {
+    const response = await api.put(`/rules/${ruleId}`, data);
+    return response.data;
+};
+
+export const getOptimizationInsights = async (vendorId: string, productId: string) => {
+    const response = await api.get<OptimizationInsight>(`/optimization-insights/${vendorId}/${productId}`);
+    return response.data;
+};

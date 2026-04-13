@@ -1,20 +1,115 @@
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, addProduct } from '../lib/api';
-import { Search, Plus, Package, MapPin, Ruler, X, QrCode } from 'lucide-react';
+import { getProducts, addProduct, updateProduct, exportProductsCSV, uploadProductsCSV } from '../lib/api';
+import { Search, Plus, Package, MapPin, Ruler, X, QrCode, Printer, Download, Upload, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
+import { jsPDF } from "jspdf";
+import QRCodeLib from 'qrcode';
 
 const ProductCatalog = () => {
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [productToEdit, setProductToEdit] = useState<any>(null);
     const [qrProduct, setQrProduct] = useState<{ id: string; name: string } | null>(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const queryClient = useQueryClient();
 
     const { data: products, isLoading } = useQuery({
         queryKey: ['products'],
         queryFn: () => getProducts(true),
     });
+
+    const uploadMutation = useMutation({
+        mutationFn: uploadProductsCSV,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            alert('Products uploaded successfully!');
+        },
+        onError: (e: any) => {
+            alert('Upload failed: ' + e.message);
+        }
+    });
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            uploadMutation.mutate(file);
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const handlePrintAllQRCodes = async () => {
+        if (!products || products.length === 0) {
+            alert('No products available to print.');
+            return;
+        }
+
+        setIsGeneratingPDF(true);
+        try {
+            // Using standard letter size in mm: 215.9 x 279.4
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'letter'
+            });
+
+            for (let i = 0; i < products.length; i++) {
+                const product = products[i];
+                const scanUrl = `${window.location.origin}/?request_product=${product.PRODUCT_ID}`;
+                
+                // Generate QR code as Data URL
+                const qrDataUrl = await QRCodeLib.toDataURL(scanUrl, {
+                    width: 1000, 
+                    margin: 2,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
+                });
+
+                if (i > 0) {
+                    doc.addPage();
+                }
+
+                // Add QR Code (centered, taking most of the page)
+                // Center calculations: Letter width is 215.9mm
+                const qrSize = 150;
+                const qrX = (215.9 - qrSize) / 2;
+                const qrY = 40;
+                doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+
+                // Add text beneath 
+                doc.setFontSize(24);
+                // doc.text aligns from the bottom-left of the text, so calculate width for center alignment
+                doc.setFont('helvetica', 'bold');
+                
+                // Truncate product name if it's too long
+                const maxLineLength = 50;
+                let displayName = product.PRODUCT_NAME || 'Unknown Product';
+                if (displayName.length > maxLineLength) {
+                     displayName = displayName.substring(0, maxLineLength) + '...';
+                }
+
+                doc.text(displayName, 215.9 / 2, qrY + qrSize + 20, { align: 'center' });
+
+                // Add Product ID
+                doc.setFontSize(16);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`ID: ${product.PRODUCT_ID}`, 215.9 / 2, qrY + qrSize + 30, { align: 'center' });
+            }
+
+            doc.save('Product_QR_Codes.pdf');
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Check console for details.');
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
 
     const filteredProducts = products?.filter(p =>
         p.PRODUCT_NAME.toLowerCase().includes(search.toLowerCase()) ||
@@ -31,13 +126,40 @@ const ProductCatalog = () => {
                     <p className="text-muted-foreground text-lg">Manage inventory items and details.</p>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
-                >
-                    <Plus size={20} />
-                    Add Product
-                </button>
+                <div className="flex flex-wrap gap-3 justify-end items-center">
+                    <button
+                        onClick={exportProductsCSV}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-slate-800/50 text-foreground border border-border/50 rounded-2xl font-semibold shadow-sm hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                    >
+                        <Download size={20} />
+                        Download CSV
+                    </button>
+                    <input type="file" accept=".csv" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadMutation.isPending}
+                        className="flex items-center gap-2 px-6 py-3 bg-white/50 dark:bg-slate-800/50 text-foreground border border-border/50 rounded-2xl font-semibold shadow-sm hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
+                    >
+                        <Upload size={20} />
+                        {uploadMutation.isPending ? 'Uploading...' : 'Upload CSV'}
+                    </button>
+
+                    <button
+                        onClick={handlePrintAllQRCodes}
+                        disabled={isGeneratingPDF || !products?.length}
+                        className="flex items-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground rounded-2xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
+                    >
+                        <Printer size={20} />
+                        {isGeneratingPDF ? 'Generating...' : 'Print all QR Scan Codes'}
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus size={20} />
+                        Add Product
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-sm">
@@ -123,13 +245,25 @@ const ProductCatalog = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right">
-                                            <button
-                                                onClick={() => setQrProduct({ id: product.PRODUCT_ID, name: product.PRODUCT_NAME })}
-                                                className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                                                title="Generate QR Code"
-                                            >
-                                                <QrCode size={18} />
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        setProductToEdit(product);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                                                    title="Edit Product"
+                                                >
+                                                    <Pencil size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setQrProduct({ id: product.PRODUCT_ID, name: product.PRODUCT_NAME })}
+                                                    className="p-2 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                                                    title="Generate QR Code"
+                                                >
+                                                    <QrCode size={18} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -139,9 +273,13 @@ const ProductCatalog = () => {
                 </div>
             </div>
 
-            <AddProductModal
+            <ProductModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setProductToEdit(null);
+                }}
+                productToEdit={productToEdit}
             />
 
             <QRCodeModal
@@ -209,7 +347,7 @@ const QRCodeModal = ({ product, onClose }: { product: { id: string; name: string
     );
 };
 
-const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+const ProductModal = ({ isOpen, onClose, productToEdit }: { isOpen: boolean; onClose: () => void; productToEdit?: any }) => {
     const [formData, setFormData] = useState({
         product_id: '',
         product_name: '',
@@ -219,10 +357,32 @@ const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         is_active: true
     });
 
+    useEffect(() => {
+        if (productToEdit) {
+            setFormData({
+                product_id: productToEdit.PRODUCT_ID || '',
+                product_name: productToEdit.PRODUCT_NAME || '',
+                description: productToEdit.DESCRIPTION || '',
+                unit_of_measure: productToEdit.UNIT_OF_MEASURE || 'EA',
+                location: productToEdit.LOCATION || '',
+                is_active: productToEdit.IS_ACTIVE !== undefined ? productToEdit.IS_ACTIVE : true
+            });
+        } else {
+            setFormData({
+                product_id: '',
+                product_name: '',
+                description: '',
+                unit_of_measure: 'EA',
+                location: '',
+                is_active: true
+            });
+        }
+    }, [productToEdit, isOpen]);
+
     const queryClient = useQueryClient();
 
     const mutation = useMutation({
-        mutationFn: addProduct,
+        mutationFn: (data: any) => productToEdit ? updateProduct(productToEdit.PRODUCT_ID, data) : addProduct(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
             onClose();
@@ -234,7 +394,7 @@ const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                 location: '',
                 is_active: true
             });
-            alert('Product added successfully!');
+            alert(`Product ${productToEdit ? 'updated' : 'added'} successfully!`);
         },
     });
 
@@ -266,7 +426,7 @@ const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                                     <Package size={24} />
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-bold">Add New Product</h2>
+                                    <h2 className="text-2xl font-bold">{productToEdit ? 'Edit Product' : 'Add New Product'}</h2>
                                     <p className="text-muted-foreground font-medium">Enter product details below.</p>
                                 </div>
                             </div>
@@ -281,8 +441,9 @@ const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                                 <input
                                     type="text"
                                     value={formData.product_id}
+                                    disabled={!!productToEdit}
                                     onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     placeholder="e.g., P-1001"
                                 />
                             </div>
@@ -342,7 +503,7 @@ const AddProductModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                                 disabled={mutation.isPending}
                                 className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
                             >
-                                {mutation.isPending ? 'Adding...' : 'Add Product'}
+                                {mutation.isPending ? 'Saving...' : productToEdit ? 'Save Changes' : 'Add Product'}
                             </button>
                         </div>
                     </div>
