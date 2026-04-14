@@ -131,6 +131,15 @@ export const updateRequestStatus = async (data: {
     return response.data;
 };
 
+export const requestQuote = async (data: {
+    request_ids: number[];
+    vendor_ids: string[];
+    requested_by: string;
+}) => {
+    const response = await api.post('/request_quote', data);
+    return response.data;
+};
+
 export const addProduct = async (data: {
     product_id: string;
     product_name: string;

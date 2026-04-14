@@ -18,6 +18,7 @@ from utils.csv_data import (
     create_purchase_order, update_po, get_all_pos, get_po_details, update_po_status,
     get_vendor_by_id, get_all_rules, add_rule, update_rule, get_optimization_insights
 )
+from utils.email_service import send_rfq_email
 
 # V3 imports
 from utils.v3_data import (
@@ -64,6 +65,11 @@ class RequestCreate(BaseModel):
     quantity_needed: int
     urgency: str = "medium"
     notes: Optional[str] = None
+
+class RequestQuotePayload(BaseModel):
+    request_ids: List[int]
+    vendor_ids: List[str]
+    requested_by: str
 
 class StatusUpdate(BaseModel):
     request_id: int
@@ -216,6 +222,49 @@ async def update_status(update: StatusUpdate):
     if not success:
         raise HTTPException(status_code=400, detail="Error updating status")
     return {"message": "Status updated successfully"}
+
+@app.post("/api/request_quote")
+async def request_quote(payload: RequestQuotePayload):
+    print(f"Bundling requests {payload.request_ids} into an RFQ")
+    
+    # 1. Fetch item details
+    requests_df = get_all_requests()
+    if requests_df.empty:
+        raise HTTPException(status_code=400, detail="No requests found")
+        
+    items_to_quote = []
+    matches = requests_df[requests_df['REQUEST_ID'].isin(payload.request_ids)]
+    for _, row in matches.iterrows():
+        items_to_quote.append(row.to_dict())
+    
+    # 2. Iterate vendors and send email
+    email_success = True
+    for vendor_id in payload.vendor_ids:
+        vendor = get_vendor_by_id(vendor_id)
+        if vendor and vendor.get('EMAIL'):
+            print(f"Sending RFQ to vendor: {vendor.get('VENDOR_NAME')} at {vendor.get('EMAIL')}")
+            result = send_rfq_email(
+                to_email=vendor.get('EMAIL'),
+                vendor_name=vendor.get('VENDOR_NAME', 'Vendor'),
+                requested_by=payload.requested_by,
+                items=items_to_quote
+            )
+            if not result:
+                email_success = False
+        else:
+            print(f"[WARNING] Vendor {vendor_id} not found or missing email.")
+            email_success = False
+    
+    # 3. Update status
+    status_success = True
+    for req_id in payload.request_ids:
+        if not update_request_status(req_id, "quote_requested", payload.requested_by):
+            status_success = False
+            
+    if not status_success or not email_success:
+        return {"message": "RFQ processed but some emails failed or statuses could not be updated.", "success": False}
+        
+    return {"message": f"Successfully sent RFQ for {len(payload.request_ids)} items to {len(payload.vendor_ids)} vendors.", "success": True}
 
 @app.get("/api/counts")
 async def get_counts():
