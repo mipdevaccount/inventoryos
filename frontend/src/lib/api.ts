@@ -419,6 +419,6 @@ export const getAtRiskPOs = async () => {
 
 export const requestQuote = async (data: any) => { return { success: true }; };
 export const exportProductsCSV = async () => {};
-export const uploadProductsCSV = async () => {};
+export const uploadProductsCSV = async (file?: any) => {};
 export const exportVendorsCSV = async () => {};
-export const uploadVendorsCSV = async () => {};
+export const uploadVendorsCSV = async (file?: any) => {};
