@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe } from '../lib/api';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, getMe, getProfile } from '../lib/api';
 
 export interface User {
   user_id?: string;
@@ -29,7 +29,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const sessionUser = await getMe();
         if (sessionUser) {
-           setUser({ email: sessionUser.email || '', user_id: sessionUser.id });
+           const profile = await getProfile(sessionUser.id).catch(() => null);
+           setUser({ 
+               email: sessionUser.email || '', 
+               user_id: sessionUser.id,
+               full_name: profile?.full_name || '',
+               role: profile?.role || 'user',
+               is_active: profile?.is_active ?? true
+           });
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
@@ -43,7 +50,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (credentials: any) => {
     const { user: authUser } = await apiLogin(credentials);
     if (authUser) {
-        setUser({ email: authUser.email || '', user_id: authUser.id });
+        const profile = await getProfile(authUser.id).catch(() => null);
+        setUser({ 
+            email: authUser.email || '', 
+            user_id: authUser.id,
+            full_name: profile?.full_name || '',
+            role: profile?.role || 'user',
+            is_active: profile?.is_active ?? true
+        });
     }
   };
 

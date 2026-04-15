@@ -32,11 +32,33 @@ export const logout = async () => {
 };
 
 export const getUsers = async () => {
-    // Requires Supabase Admin rights, returning mock for now
-    return [];
+    const { data, error } = await supabase.from('profiles').select('*').order('full_name');
+    if (error) throw error;
+    return data.map((u: any) => ({
+        user_id: u.id,
+        email: u.email,
+        full_name: u.full_name,
+        role: u.role,
+        is_active: u.is_active
+    }));
 };
 
-export const deleteUser = async (userId: number) => {
+export const getProfile = async (userId: string) => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (error) throw error;
+    return data;
+};
+
+export const deleteUser = async (userId: string) => {
+    // Instead of deleting from auth.users, we disable the profile
+    const { error } = await supabase.from('profiles').update({ is_active: false, role: 'disabled' }).eq('id', userId);
+    if (error) throw error;
+    return { success: true };
+};
+
+export const updateUserRole = async (userId: string, role: string) => {
+    const { error } = await supabase.from('profiles').update({ role }).eq('id', userId);
+    if (error) throw error;
     return { success: true };
 };
 
