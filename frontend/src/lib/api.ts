@@ -365,7 +365,7 @@ export const getRules = async () => {
         MIN_QTY: r.min_qty,
         DISCOUNT_PCT: r.discount_pct,
         NOTES: r.notes
-    }));
+    })) as OrderingRule[];
 };
 
 export const createRule = async (data: any) => {
@@ -376,7 +376,7 @@ export const updateRule = async (ruleId: string, data: any) => {
     return { success: true };
 };
 
-export const getOptimizationInsights = async () => {
+export const getOptimizationInsights = async (vendorId?: any, productId?: any) => {
     return { rule: null, history: { last_order_date: null, last_order_qty: 0, qty_past_90_days: 0 } };
 };
 
