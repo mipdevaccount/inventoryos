@@ -240,6 +240,21 @@ export const getVendorProducts = async (vendorId: string) => {
     }));
 };
 
+export const getAllVendorProducts = async () => {
+    const { data, error } = await supabase.from('vendor_products').select('*, products(product_name, unit_of_measure), vendors(vendor_name)');
+    if (error) throw error;
+    return data.map((vp: any) => ({
+        VENDOR_ID: vp.vendor_id,
+        PRODUCT_ID: vp.product_id,
+        PRICE: vp.price,
+        SKU_NUMBER: vp.sku_number,
+        LEAD_TIME_DAYS: vp.lead_time_days,
+        PRODUCT_NAME: vp.products?.product_name || '',
+        VENDOR_NAME: vp.vendors?.vendor_name || '',
+        UNIT_OF_MEASURE: vp.products?.unit_of_measure || ''
+    }));
+};
+
 export const addVendorProduct = async (vendorId: string, data: any) => {
     const { error } = await supabase.from('vendor_products').insert([{
         vendor_id: vendorId,
@@ -324,7 +339,22 @@ export const updatePOStatus = async (poNumber: string, status: string) => {
     return { success: true };
 };
 
+export const updatePurchaseOrder = async (poNumber: string, data: any) => {
+    return { success: true }; // Stub for any generic update
+};
+
 // === RULES & MOCKS ===
+export interface OrderingRule {
+    RULE_ID: string;
+    VENDOR_ID: string;
+    PRODUCT_ID: string;
+    MIN_QTY: number;
+    DISCOUNT_PCT: number;
+    NOTES: string;
+    VENDOR_NAME?: string;
+    PRODUCT_NAME?: string;
+}
+
 export const getRules = async () => {
     const { data, error } = await supabase.from('vendor_product_rules').select('*');
     if (error) throw error;
@@ -336,6 +366,14 @@ export const getRules = async () => {
         DISCOUNT_PCT: r.discount_pct,
         NOTES: r.notes
     }));
+};
+
+export const createRule = async (data: any) => {
+    return { success: true };
+};
+
+export const updateRule = async (ruleId: string, data: any) => {
+    return { success: true };
 };
 
 export const getOptimizationInsights = async () => {
@@ -358,6 +396,10 @@ export const getReorderRecommendations = async () => {
             days_until_stockout: 9
         }
     ];
+};
+
+export const createPOFromRecommendation = async (data: any) => {
+    return { success: true, po_number: "CI00000099" };
 };
 
 export const getPORiskAssessment = async (poNumber: string) => {
