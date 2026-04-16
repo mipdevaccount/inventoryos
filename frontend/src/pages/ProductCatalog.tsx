@@ -1,8 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, addProduct, updateProduct, exportProductsCSV, uploadProductsCSV } from '../lib/api';
-import { Search, Plus, Package, MapPin, Ruler, X, QrCode, Printer, Download, Upload, Pencil } from 'lucide-react';
+import { getProducts, addProduct, updateProduct, deleteProduct, exportProductsCSV, uploadProductsCSV } from '../lib/api';
+import { Search, Plus, Package, MapPin, Ruler, X, QrCode, Printer, Download, Upload, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
 import { jsPDF } from "jspdf";
@@ -32,6 +32,23 @@ const ProductCatalog = () => {
             alert('Upload failed: ' + e.message);
         }
     });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteProduct,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            alert('Product deleted successfully!');
+        },
+        onError: (e: any) => {
+            alert('Failed to delete product: ' + e.message);
+        }
+    });
+
+    const handleDelete = (productId: string, productName: string) => {
+        if (window.confirm(`Are you sure you want to completely delete ${productName}? This cannot be undone.`)) {
+            deleteMutation.mutate(productId);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -255,6 +272,13 @@ const ProductCatalog = () => {
                                                     title="Edit Product"
                                                 >
                                                     <Pencil size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(product.PRODUCT_ID, product.PRODUCT_NAME)}
+                                                    className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-muted-foreground hover:text-red-500"
+                                                    title="Delete Product"
+                                                >
+                                                    <Trash2 size={18} />
                                                 </button>
                                                 <button
                                                     onClick={() => setQrProduct({ id: product.PRODUCT_ID, name: product.PRODUCT_NAME })}
