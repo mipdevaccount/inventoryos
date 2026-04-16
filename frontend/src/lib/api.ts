@@ -132,6 +132,12 @@ export const updateProduct = async (productId: string, data: any) => {
     return { success: true };
 };
 
+export const deleteProduct = async (productId: string) => {
+    const { error } = await supabase.from('products').delete().eq('product_id', productId);
+    if (error) throw error;
+    return { success: true };
+};
+
 // === REQUESTS ===
 export const getRequests = async (status?: string) => {
     let query = supabase.from('requests').select('*, products(product_name, location, unit_of_measure)').order('submitted_at', { ascending: false });
