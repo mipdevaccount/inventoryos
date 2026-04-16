@@ -58,8 +58,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Sidebar */}
             <motion.div
-                initial={{ x: -20, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className={cn(
                     "fixed lg:static inset-y-0 left-0 z-50 transform transition-all duration-300 ease-in-out lg:transform-none flex flex-col",
                     isSidebarCollapsed ? "w-20" : "w-72",
