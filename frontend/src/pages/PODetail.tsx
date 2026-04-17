@@ -1,13 +1,16 @@
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPurchaseOrder, updatePOStatus } from '../lib/api';
-import { ArrowLeft, FileText, DollarSign, Building2, Package, CheckCircle2, Truck, XCircle } from 'lucide-react';
+import { ArrowLeft, FileText, DollarSign, Building2, Package, CheckCircle2, Truck, XCircle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const PODetail = () => {
     const { poNumber } = useParams<{ poNumber: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
 
     const { data: po, isLoading } = useQuery({
         queryKey: ['purchaseOrder', poNumber],
@@ -19,6 +22,7 @@ const PODetail = () => {
         mutationFn: (status: string) => updatePOStatus(poNumber!, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['purchaseOrder', poNumber] });
+            setIsCloseModalOpen(false);
         },
     });
 
@@ -53,7 +57,52 @@ const PODetail = () => {
     };
 
     return (
-        <div className="space-y-8 pb-20">
+        <div className="space-y-8 pb-20 relative">
+            {/* Close PO Confirmation Modal */}
+            <AnimatePresence>
+                {isCloseModalOpen && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsCloseModalOpen(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 border border-white/10"
+                        >
+                            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 mb-6 mx-auto">
+                                <AlertTriangle size={32} />
+                            </div>
+                            <h2 className="text-2xl font-bold text-center mb-2">Close Purchase Order?</h2>
+                            <p className="text-muted-foreground text-center mb-8">
+                                Are you sure you want to close this PO? Closing a PO indicates that you are abandoning it or terminating the transaction with the vendor. This action cannot be easily undone, and any items on this order will not be tracked into inventory.
+                            </p>
+                            
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={() => setIsCloseModalOpen(false)}
+                                    className="flex-1 py-3 px-4 rounded-xl font-semibold border border-border hover:bg-secondary transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => statusMutation.mutate('Closed')}
+                                    disabled={statusMutation.isPending}
+                                    className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50"
+                                >
+                                    {statusMutation.isPending ? 'Closing...' : 'Yes, Close PO'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* Header */}
             <div className="space-y-6">
                 <button
@@ -103,7 +152,7 @@ const PODetail = () => {
                         )}
                         {po.STATUS !== 'Closed' && po.STATUS !== 'Received' && (
                             <button
-                                onClick={() => statusMutation.mutate('Closed')}
+                                onClick={() => setIsCloseModalOpen(true)}
                                 className="flex items-center gap-2 px-6 py-3 bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200 rounded-xl font-semibold hover:bg-slate-300 dark:hover:bg-slate-700 transition-all"
                             >
                                 <XCircle size={18} />
