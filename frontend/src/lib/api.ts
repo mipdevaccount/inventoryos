@@ -426,6 +426,22 @@ export const getPurchaseOrder = async (poNumber: string) => {
     };
 };
 
+export const getAllPOItems = async () => {
+    // Used specifically for the Intelligence Hub variance validations
+    const { data, error } = await supabase.from('po_items').select('*, purchase_orders(vendor_id, created_at), products(product_name)');
+    if (error) throw error;
+    
+    return data.map((i: any) => ({
+        PO_NUMBER: i.po_number,
+        PRODUCT_ID: i.product_id,
+        PRODUCT_NAME: i.products?.product_name || '',
+        QUANTITY: i.quantity_ordered,
+        UNIT_PRICE: i.unit_price,
+        VENDOR_ID: i.purchase_orders?.vendor_id || '',
+        CREATED_AT: i.purchase_orders?.created_at || new Date().toISOString()
+    }));
+};
+
 export const updatePOStatus = async (poNumber: string, status: string) => {
     const { error } = await supabase.from('purchase_orders').update({ status, updated_at: new Date() }).eq('po_number', poNumber);
     if (error) throw error;
