@@ -70,6 +70,7 @@ export interface Product {
     LOCATION: string;
     UNIT_OF_MEASURE: string;
     IS_ACTIVE: boolean;
+    CURRENT_STOCK?: number;
 }
 
 export interface Request {
@@ -97,14 +98,24 @@ export const getProducts = async (activeOnly = true) => {
     const { data, error } = await query;
     if (error) throw error;
     // Map to uppercase keys to match existing components
-    return data.map(p => ({
-        PRODUCT_ID: p.product_id,
-        PRODUCT_NAME: p.product_name,
-        DESCRIPTION: p.description,
-        LOCATION: p.location,
-        UNIT_OF_MEASURE: p.unit_of_measure,
-        IS_ACTIVE: p.is_active
-    }));
+    return data.map(p => {
+        // Mock a consistent stock level based on product ID for the UI
+        const seedStr = p.product_id + p.product_name;
+        let mockStockSeed = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            mockStockSeed += seedStr.charCodeAt(i);
+        }
+        
+        return {
+            PRODUCT_ID: p.product_id,
+            PRODUCT_NAME: p.product_name,
+            DESCRIPTION: p.description,
+            LOCATION: p.location,
+            UNIT_OF_MEASURE: p.unit_of_measure,
+            IS_ACTIVE: p.is_active,
+            CURRENT_STOCK: mockStockSeed % 25 // 0 to 24 units
+        };
+    });
 };
 
 export const addProduct = async (data: any) => {

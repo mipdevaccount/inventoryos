@@ -8,6 +8,7 @@ const ShopFloor = () => {
     const [search, setSearch] = useState('');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'request' | 'inventory'>('request');
 
     const { data: products, isLoading } = useQuery({
         queryKey: ['products'],
@@ -51,7 +52,7 @@ const ShopFloor = () => {
                     <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                         Shop Floor
                     </h1>
-                    <p className="text-muted-foreground text-lg">Select a product to request inventory.</p>
+                    <p className="text-muted-foreground text-lg">Select a product to request inventory or view current levels.</p>
                 </div>
 
                 <div className="relative w-full md:w-96 group">
@@ -69,13 +70,28 @@ const ShopFloor = () => {
                 </div>
             </div>
 
+            <div className="flex bg-secondary/50 p-1 rounded-xl w-fit border border-white/20 backdrop-blur-md">
+                <button 
+                    onClick={() => setActiveTab('request')}
+                    className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'request' ? 'bg-white dark:bg-slate-800 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5'}`}
+                >
+                    Request Inventory
+                </button>
+                <button 
+                    onClick={() => setActiveTab('inventory')}
+                    className={`px-6 py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center gap-2 ${activeTab === 'inventory' ? 'bg-white dark:bg-slate-800 text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5'}`}
+                >
+                    Current Levels
+                </button>
+            </div>
+
             {isLoading ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[1, 2, 3, 4, 5, 6].map((i) => (
                         <div key={i} className="h-48 rounded-3xl bg-muted/50 animate-pulse" />
                     ))}
                 </div>
-            ) : (
+            ) : activeTab === 'request' ? (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {filteredProducts?.map((product, index) => (
                         <motion.div
@@ -119,6 +135,66 @@ const ShopFloor = () => {
                             </div>
                         </motion.div>
                     ))}
+                </div>
+            ) : (
+                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 rounded-3xl shadow-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-white/50 dark:bg-slate-800/50 border-b border-border">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Product</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Location</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Stock Level</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                                {filteredProducts?.map(product => {
+                                    const stock = product.CURRENT_STOCK || 0;
+                                    let colorClass = 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 border-green-200 dark:border-green-500/30';
+                                    let statusText = 'Healthy';
+                                    
+                                    if (stock < 5) {
+                                        colorClass = 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 border-red-200 dark:border-red-500/30';
+                                        statusText = 'Critical';
+                                    } else if (stock <= 10) {
+                                        colorClass = 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30';
+                                        statusText = 'Warning';
+                                    }
+
+                                    return (
+                                        <tr key={product.PRODUCT_ID} className="hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-foreground text-base max-w-sm truncate" title={product.PRODUCT_NAME}>{product.PRODUCT_NAME}</div>
+                                                <div className="text-xs text-muted-foreground font-mono mt-1">{product.PRODUCT_ID}</div>
+                                            </td>
+                                            <td className="px-6 py-4 font-medium text-muted-foreground">
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin size={14} className="text-primary" />
+                                                    {product.LOCATION || 'N/A'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="font-bold text-xl">{stock}</span> <span className="text-sm text-muted-foreground font-medium">{product.UNIT_OF_MEASURE}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <span className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${colorClass} shadow-sm inline-block min-w-[100px] text-center`}>
+                                                    {statusText}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {filteredProducts?.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-12 text-center text-muted-foreground">
+                                            No products found matching your search.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
