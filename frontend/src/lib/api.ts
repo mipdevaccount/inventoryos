@@ -360,7 +360,8 @@ export const getPurchaseOrders = async () => {
         VENDOR_NAME: po.vendors?.vendor_name || '',
         STATUS: po.status,
         TOTAL_AMOUNT: po.total_amount,
-        CREATED_AT: po.created_at
+        CREATED_AT: po.created_at,
+        UPDATED_AT: po.updated_at
     }));
 };
 
