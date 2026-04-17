@@ -150,13 +150,18 @@ export const updateStock = async (productId: string, currentStock: number, oldSt
 
     // 2. Log the adjustment for reporting if tracking parameters exist
     if (adjustedBy && oldStock !== undefined) {
-        await supabase.from('inventory_adjustments').insert([{
+        const { error: auditError } = await supabase.from('inventory_adjustments').insert([{
             product_id: productId,
             old_stock_level: oldStock,
             new_stock_level: currentStock,
             adjusted_by: adjustedBy,
             notes: notes || "Manual floor adjustment"
         }]);
+        
+        if (auditError) {
+            console.error("Failed to insert audit log:", auditError);
+            throw auditError;
+        }
     }
 
     return { success: true };
