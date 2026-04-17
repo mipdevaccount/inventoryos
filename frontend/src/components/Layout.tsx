@@ -152,10 +152,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
                         {!isSidebarCollapsed ? (
                             <div className="flex gap-2 mt-2">
-                                <Link to="/users" onClick={() => setIsSidebarOpen(false)} className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                                    <Settings size={14} />
-                                    Settings
-                                </Link>
+                                {user?.role === 'admin' && (
+                                    <Link to="/users" onClick={() => setIsSidebarOpen(false)} className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                                        <Settings size={14} />
+                                        Settings
+                                    </Link>
+                                )}
                                 <button onClick={logout} className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors">
                                     <LogOut size={14} />
                                     Logout
@@ -163,9 +165,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </div>
                         ) : (
                             <div className="flex flex-col gap-2 mt-4">
-                                <Link to="/users" title="Settings" className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex justify-center text-muted-foreground hover:text-foreground">
-                                    <Settings size={18} />
-                                </Link>
+                                {user?.role === 'admin' && (
+                                    <Link to="/users" title="Settings" className="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex justify-center text-muted-foreground hover:text-foreground">
+                                        <Settings size={18} />
+                                    </Link>
+                                )}
                                 <button title="Logout" onClick={logout} className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors flex justify-center">
                                     <LogOut size={18} />
                                 </button>
