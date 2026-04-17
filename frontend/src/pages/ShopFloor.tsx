@@ -214,6 +214,7 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
     const [urgency, setUrgency] = useState('medium');
     const [notes, setNotes] = useState('');
     const [name, setName] = useState('');
+    const [requestedUnit, setRequestedUnit] = useState(product?.UNIT_OF_MEASURE || 'Each');
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -222,8 +223,9 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
             setQuantity(1);
             setUrgency('medium');
             setNotes('');
+            setRequestedUnit(product?.UNIT_OF_MEASURE || 'Each');
         }
-    }, [isOpen, user]);
+    }, [isOpen, user, product]);
 
     const mutation = useMutation({
         mutationFn: submitRequest,
@@ -286,14 +288,31 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
 
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Quantity ({product.UNIT_OF_MEASURE})</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(parseInt(e.target.value))}
-                                        className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    />
+                                    <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex justify-between">
+                                        Quantity
+                                        {product.UNIT_OF_MEASURE && <span className="text-xs normal-case opacity-60 ml-2">(Standard: {product.UNIT_OF_MEASURE})</span>}
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(parseInt(e.target.value))}
+                                            className="w-1/2 px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                        />
+                                        <select
+                                            value={requestedUnit}
+                                            onChange={(e) => setRequestedUnit(e.target.value)}
+                                            className="w-1/2 px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
+                                        >
+                                            {Array.from(new Set([
+                                                product.UNIT_OF_MEASURE || 'Each',
+                                                'Each', 'Box', 'Case', 'Pack', 'Pallet', 'Bottle', 'Gallon', 'Roll', 'Pair', 'Set'
+                                            ])).map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Urgency</label>
@@ -339,7 +358,7 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
                                         requested_by: name,
                                         quantity_needed: quantity,
                                         urgency,
-                                        notes
+                                        notes: `[Requested Unit: ${requestedUnit}] ${notes}`.trim()
                                     });
                                 }}
                                 disabled={mutation.isPending}
