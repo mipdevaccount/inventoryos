@@ -174,7 +174,7 @@ const ReorderRecommendations = () => {
                                         <div>
                                             <p className="text-sm text-muted-foreground">Estimated Cost</p>
                                             <p className="text-lg font-semibold">
-                                                ${(rec.recommended_quantity * rec.unit_price).toLocaleString()}
+                                                ${(rec.recommended_quantity * rec.unit_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </p>
                                         </div>
                                     </div>

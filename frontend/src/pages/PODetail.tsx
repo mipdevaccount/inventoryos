@@ -142,7 +142,7 @@ const PODetail = () => {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Subtotal</span>
-                                <span className="font-medium">${po.TOTAL_AMOUNT.toFixed(2)}</span>
+                                <span className="font-medium">${po.TOTAL_AMOUNT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Tax (0%)</span>
@@ -150,7 +150,7 @@ const PODetail = () => {
                             </div>
                             <div className="pt-4 border-t border-border flex justify-between items-center">
                                 <span className="font-bold text-lg">Total</span>
-                                <span className="font-bold text-lg text-primary">${po.TOTAL_AMOUNT.toFixed(2)}</span>
+                                <span className="font-bold text-lg text-primary">${po.TOTAL_AMOUNT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                         </div>
                     </div>
@@ -188,10 +188,10 @@ const PODetail = () => {
                                                 {item.QUANTITY_ORDERED} {item.UNIT_OF_MEASURE}
                                             </td>
                                             <td className="py-4 px-6 text-right font-mono">
-                                                ${item.UNIT_PRICE.toFixed(2)}
+                                                ${item.UNIT_PRICE.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                             <td className="py-4 px-6 text-right font-mono font-bold">
-                                                ${(item.QUANTITY_ORDERED * item.UNIT_PRICE).toFixed(2)}
+                                                ${(item.QUANTITY_ORDERED * item.UNIT_PRICE).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
                                         </tr>
                                     ))}

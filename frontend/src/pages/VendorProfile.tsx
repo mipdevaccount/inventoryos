@@ -166,7 +166,7 @@ const VendorProfile = () => {
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6 font-mono text-sm">{vp.SKU_NUMBER}</td>
-                                            <td className="py-4 px-6 font-medium">${vp.PRICE.toFixed(2)} / {vp.UNIT_OF_MEASURE}</td>
+                                            <td className="py-4 px-6 font-medium">${vp.PRICE.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {vp.UNIT_OF_MEASURE}</td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <Clock size={14} className="text-muted-foreground" />

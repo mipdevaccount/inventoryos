@@ -62,7 +62,7 @@ const Reports = () => {
                         </div>
                         <p className="font-semibold text-muted-foreground">Total Spend</p>
                     </div>
-                    <h3 className="text-3xl font-bold">${totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                    <h3 className="text-3xl font-bold">${totalSpend.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     <div className="flex items-center gap-1 mt-2 text-sm text-green-600 font-medium">
                         <ArrowUpRight size={16} />
                         <span>+12.5% from last month</span>
@@ -102,7 +102,7 @@ const Reports = () => {
                         </div>
                         <p className="font-semibold text-muted-foreground">Avg. Order Value</p>
                     </div>
-                    <h3 className="text-3xl font-bold">${averageOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                    <h3 className="text-3xl font-bold">${averageOrderValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     <div className="flex items-center gap-1 mt-2 text-sm text-red-500 font-medium">
                         <ArrowDownRight size={16} />
                         <span>-2.1% from last month</span>
@@ -125,7 +125,7 @@ const Reports = () => {
                                 <div key={vendor.id} className="space-y-2">
                                     <div className="flex justify-between text-sm font-medium">
                                         <span>{vendor.name}</span>
-                                        <span>${vendor.amount.toLocaleString()} ({vendor.percentage.toFixed(1)}%)</span>
+                                        <span>${vendor.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({vendor.percentage.toFixed(1)}%)</span>
                                     </div>
                                     <div className="h-3 w-full bg-secondary/50 rounded-full overflow-hidden">
                                         <motion.div
@@ -163,7 +163,7 @@ const Reports = () => {
                                         <tr key={vendor.id} className="group">
                                             <td className="py-4 font-medium">{vendor.name}</td>
                                             <td className="py-4 text-right">{vendorOrders}</td>
-                                            <td className="py-4 text-right font-mono">${vendor.amount.toLocaleString()}</td>
+                                            <td className="py-4 text-right font-mono">${vendor.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                     );
                                 })}

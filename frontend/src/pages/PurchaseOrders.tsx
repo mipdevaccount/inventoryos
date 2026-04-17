@@ -113,7 +113,7 @@ const PurchaseOrders = () => {
                                                 {po.STATUS}
                                             </span>
                                         </td>
-                                        <td className="py-4 px-6 font-medium">${po.TOTAL_AMOUNT.toFixed(2)}</td>
+                                        <td className="py-4 px-6 font-medium">${po.TOTAL_AMOUNT.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         <td className="py-4 px-6 text-sm text-muted-foreground">
                                             {format(new Date(po.CREATED_AT), 'MMM d, yyyy')}
                                         </td>
@@ -187,7 +187,7 @@ const POItemRow = ({ item, idx, vendorProducts, selectedVendor, handleUpdateQuan
                     <p className="font-medium">{product?.PRODUCT_NAME}</p>
                     <div className="flex items-center gap-2">
                         <p className={`text-xs ${discountActive ? 'text-green-600 dark:text-green-400 font-bold' : 'text-muted-foreground'}`}>
-                            ${effectivePrice.toFixed(2)} / {product?.UNIT_OF_MEASURE}
+                            ${effectivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {product?.UNIT_OF_MEASURE}
                             {discountActive && ' (Discount Applied)'}
                         </p>
                         {!discountActive && effectivePrice !== item.unit_price && (
@@ -502,7 +502,7 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                             ))}
                                             <div className="flex justify-end pt-4 border-t border-border">
                                                 <p className="text-lg font-bold">
-                                                    Total: ${items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toFixed(2)}
+                                                    Total: ${items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </p>
                                             </div>
                                         </div>
