@@ -36,6 +36,16 @@ const ShopFloor = () => {
         }
     }, [products]);
 
+    // Keep selected product in sync with products data (for instant UI updates)
+    useEffect(() => {
+        if (selectedProduct && products && isModalOpen) {
+            const updated = products.find(p => p.PRODUCT_ID === selectedProduct.PRODUCT_ID);
+            if (updated && updated.CURRENT_STOCK !== selectedProduct.CURRENT_STOCK) {
+                setSelectedProduct(updated);
+            }
+        }
+    }, [products, selectedProduct, isModalOpen]);
+
     const filteredProducts = products?.filter(p =>
         p.PRODUCT_NAME.toLowerCase().includes(search.toLowerCase()) ||
         p.PRODUCT_ID.toLowerCase().includes(search.toLowerCase())
