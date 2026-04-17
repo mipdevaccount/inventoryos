@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, submitRequest, type Product } from '../lib/api';
 import { Search, MapPin, Ruler } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../contexts/AuthContext';
 
 const ShopFloor = () => {
     const [search, setSearch] = useState('');
@@ -208,11 +209,21 @@ const ShopFloor = () => {
 };
 
 const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: () => void; product: Product | null }) => {
+    const { user } = useAuth();
     const [quantity, setQuantity] = useState(1);
     const [urgency, setUrgency] = useState('medium');
     const [notes, setNotes] = useState('');
     const [name, setName] = useState('');
     const queryClient = useQueryClient();
+
+    useEffect(() => {
+        if (isOpen && user) {
+            setName(user.full_name || user.email || '');
+            setQuantity(1);
+            setUrgency('medium');
+            setNotes('');
+        }
+    }, [isOpen, user]);
 
     const mutation = useMutation({
         mutationFn: submitRequest,
