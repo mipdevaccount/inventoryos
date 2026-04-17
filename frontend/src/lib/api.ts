@@ -80,7 +80,7 @@ export interface Request {
     REQUESTED_BY: string;
     QUANTITY_NEEDED: number;
     UNIT_OF_MEASURE?: string;
-    URGENCY: 'low' | 'medium' | 'high';
+    URGENCY: 'low' | 'medium' | 'high' | 'urgent';
     STATUS: 'pending' | 'ordered' | 'received' | 'cancelled';
     SUBMITTED_AT: string;
     UPDATED_AT: string;

@@ -215,9 +215,10 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
                                         onChange={(e) => setUrgency(e.target.value)}
                                         className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none"
                                     >
-                                        <option value="low">Low Priority</option>
-                                        <option value="medium">Medium Priority</option>
-                                        <option value="high">High Priority</option>
+                                        <option value="low">Low - 1 - 2 weeks</option>
+                                        <option value="medium">Medium - 1 week</option>
+                                        <option value="high">High - 1-2 days</option>
+                                        <option value="urgent">Urgent - immediate</option>
                                     </select>
                                 </div>
                             </div>
