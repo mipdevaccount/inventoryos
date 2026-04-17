@@ -27,13 +27,6 @@ jobs:
         id: login-ecr
 
       # ----- 2. Build & Push --------------------------------------------------
-      - name: Build, Tag, and Push (Backend)
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        run: |
-          docker build -t $ECR_REGISTRY/commander-backend:prod-latest ./backend
-          docker push $ECR_REGISTRY/commander-backend:prod-latest
-
       - name: Build, Tag, and Push (Frontend)
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -44,7 +37,6 @@ jobs:
       # ----- 3. Update ECS ----------------------------------------------------
       - name: Force ECS Redeploy
         run: |
-          aws ecs update-service --cluster px-apps-cluster --service commander-backend-prod --force-new-deployment
           aws ecs update-service --cluster px-apps-cluster --service commander-frontend-prod --force-new-deployment
 
       - name: Summary

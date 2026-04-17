@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getUsers, deleteUser } from '../lib/api';
+import { getUsers, deleteUser, updateUserRole } from '../lib/api';
 import { UserPlus, Shield, Mail, Lock, User as UserIcon, Loader2, CheckCircle2, Trash2, Users } from 'lucide-react';
 
 export interface UserData {
-  user_id: number;
+  user_id: string;
   email: string;
   full_name: string;
   role: string;
@@ -67,15 +67,24 @@ const UserManagement: React.FC = () => {
         }
     };
 
-    const handleDelete = async (userId: number, userName: string) => {
-        if (window.confirm(`Are you sure you want to permanently delete ${userName}?`)) {
+    const handleDelete = async (userId: string, userName: string) => {
+        if (window.confirm(`Are you sure you want to disable ${userName}? They will lose all access.`)) {
             setDeleteError('');
             try {
                 await deleteUser(userId);
-                setUsers(users.filter(u => u.user_id !== userId));
+                setUsers(users.map(u => u.user_id === userId ? { ...u, is_active: false, role: 'disabled' } : u));
             } catch (err: any) {
-                setDeleteError(err.response?.data?.detail || 'Failed to delete user');
+                setDeleteError(err.message || 'Failed to delete user');
             }
+        }
+    };
+
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        try {
+            await updateUserRole(userId, newRole);
+            setUsers(users.map(u => u.user_id === userId ? { ...u, role: newRole } : u));
+        } catch (err: any) {
+            alert(err.message || 'Failed to update role');
         }
     };
 
@@ -269,13 +278,25 @@ const UserManagement: React.FC = () => {
                                             <td className="px-5 py-3 font-medium text-foreground">{u.full_name}</td>
                                             <td className="px-5 py-3 text-muted-foreground truncate max-w-[150px]" title={u.email}>{u.email}</td>
                                             <td className="px-5 py-3">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border
+                                                <select 
+                                                    value={u.role} 
+                                                    onChange={(e) => handleRoleChange(u.user_id, e.target.value)}
+                                                    disabled={currentUser?.user_id === u.user_id || !u.is_active}
+                                                    className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase border outline-none cursor-pointer appearance-none text-center
                                                     ${u.role === 'admin' ? 'bg-indigo-500/10 text-indigo-600 border-indigo-200 dark:border-indigo-500/20' : 
                                                     u.role === 'office' ? 'bg-blue-500/10 text-blue-600 border-blue-200 dark:border-blue-500/20' : 
                                                     u.role === 'shop_floor' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-500/20' : 
-                                                    'bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-500/20'}`}>
-                                                    {u.role.replace('_', ' ')}
-                                                </span>
+                                                    u.role === 'disabled' ? 'bg-red-500/10 text-red-600 border-red-200' :
+                                                    'bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-500/20'}`}
+                                                >
+                                                    <option value="user">User</option>
+                                                    <option value="admin">Admin</option>
+                                                    <option value="office">Office</option>
+                                                    <option value="shop_floor">Shop Floor</option>
+                                                    <option value="read_only">Read Only</option>
+                                                    <option value="disabled" disabled>Disabled</option>
+                                                </select>
+                                                {!u.is_active && <span className="ml-2 text-xs text-red-500 font-bold">DISABLED</span>}
                                             </td>
                                             <td className="px-5 py-3 text-right">
                                                 <button

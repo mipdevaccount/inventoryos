@@ -19,7 +19,7 @@ const Login: React.FC = () => {
             await login({ email, password });
             navigate('/');
         } catch (err: any) {
-            setError(err.response?.data?.detail || 'Invalid email or password');
+            setError(err.message || err.response?.data?.detail || 'Invalid email or password');
         } finally {
             setIsSubmitting(false);
         }

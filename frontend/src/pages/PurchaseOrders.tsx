@@ -2,14 +2,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getPurchaseOrder, getVendors, getVendorProducts, getRequests, getAllVendorProducts, getOptimizationInsights } from '../lib/api';
-import { Plus, Search, ChevronRight, FileText, X, Pencil, Clock, Info, Tag } from 'lucide-react';
+import { getPurchaseOrders, createPurchaseOrder, updatePurchaseOrder, getPurchaseOrder, getVendors, getVendorProducts, getRequests, getAllVendorProducts, getOptimizationInsights, requestQuote } from '../lib/api';
+import { Plus, Search, ChevronRight, FileText, X, Pencil, Clock, Info, Tag, Send, CheckSquare, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
 const PurchaseOrders = () => {
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isRFQModalOpen, setIsRFQModalOpen] = useState(false);
     const [poToEdit, setPoToEdit] = useState<any>(null);
 
     const { data: pos, isLoading } = useQuery({
@@ -43,13 +44,22 @@ const PurchaseOrders = () => {
                     <p className="text-muted-foreground text-lg">Manage procurement and track orders.</p>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
-                >
-                    <Plus size={20} />
-                    Create PO
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsRFQModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-foreground border border-border rounded-2xl font-semibold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                    >
+                        <Send size={20} />
+                        Request Quote
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
+                    >
+                        <Plus size={20} />
+                        Create PO
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white/40 dark:bg-slate-900/40 backdrop-blur-md p-2 rounded-2xl border border-white/20 shadow-sm">
@@ -142,6 +152,11 @@ const PurchaseOrders = () => {
                     setPoToEdit(null);
                 }}
                 poToEdit={poToEdit}
+            />
+
+            <RFQModal
+                isOpen={isRFQModalOpen}
+                onClose={() => setIsRFQModalOpen(false)}
             />
         </div>
     );
@@ -241,16 +256,19 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
         enabled: !!poToEdit,
     });
 
-    const { data: pendingRequests } = useQuery({
-        queryKey: ['requests', 'pending'],
-        queryFn: () => getRequests('pending'),
+    const { data: actionableRequests } = useQuery({
+        queryKey: ['requests', 'actionable'],
+        queryFn: async () => {
+            const [pending, quoted] = await Promise.all([getRequests('pending'), getRequests('quote_requested')]);
+            return [...(pending || []), ...(quoted || [])];
+        },
         enabled: !poToEdit && isOpen,
     });
 
     const { data: allVendorProducts } = useQuery({
         queryKey: ['allVendorProducts'],
         queryFn: getAllVendorProducts,
-        enabled: !poToEdit && pendingRequests && pendingRequests.length > 0 && isOpen,
+        enabled: !poToEdit && actionableRequests && actionableRequests.length > 0 && isOpen,
     });
 
     useEffect(() => {
@@ -346,10 +364,10 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                     <div className="p-8 pt-4 overflow-y-auto flex-1">
                         {step === 1 ? (
                             <div className="space-y-4">
-                                {!poToEdit && pendingRequests && pendingRequests.length > 0 && (
+                                {!poToEdit && actionableRequests && actionableRequests.length > 0 && (
                                     <div className="space-y-4 mb-8">
                                         <label className="text-sm font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider flex items-center gap-2">
-                                            <Clock size={16} /> Pending Requests
+                                            <Clock size={16} /> Pending & Quoted Requests
                                         </label>
                                         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl overflow-hidden">
                                             <table className="w-full text-sm">
@@ -361,7 +379,7 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-amber-500/10">
-                                                    {pendingRequests.map(req => {
+                                                    {actionableRequests.map(req => {
                                                         const suppliers = allVendorProducts?.filter(vp => vp.PRODUCT_ID === req.PRODUCT_ID) || [];
                                                         const vendorNames = suppliers.map(s => {
                                                             const v = vendors?.find(vend => vend.VENDOR_ID === s.VENDOR_ID);
@@ -369,8 +387,11 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                                         }).join(', ');
                                                         
                                                         return (
-                                                            <tr key={req.REQUEST_ID}>
-                                                                <td className="px-4 py-3 font-medium text-amber-900 dark:text-amber-100">{req.PRODUCT_NAME}</td>
+                                                            <tr key={req.REQUEST_ID} className={req.STATUS === 'quote_requested' ? 'opacity-70' : ''}>
+                                                                <td className="px-4 py-3 font-medium text-amber-900 dark:text-amber-100">
+                                                                    {req.PRODUCT_NAME}
+                                                                    {req.STATUS === 'quote_requested' && <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full uppercase font-bold">Quoted</span>}
+                                                                </td>
                                                                 <td className="px-4 py-3 font-bold text-amber-700 dark:text-amber-400">{req.QUANTITY_NEEDED}</td>
                                                                 <td className="px-4 py-3 text-amber-700/70 dark:text-amber-400/70">{vendorNames || 'No vendors configured'}</td>
                                                             </tr>
@@ -412,16 +433,16 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                     )}
                                 </div>
 
-                                {!poToEdit && pendingRequests && pendingRequests.length > 0 && (
+                                {!poToEdit && actionableRequests && actionableRequests.length > 0 && (
                                     <div className="bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 flex items-center justify-between mt-4">
                                         <div>
-                                            <p className="font-bold text-amber-700 dark:text-amber-500">Pending Requests Found</p>
-                                            <p className="text-sm text-amber-700/70 dark:text-amber-500/70">There are pending requests that this vendor can fulfill.</p>
+                                            <p className="font-bold text-amber-700 dark:text-amber-500">Actionable Requests Found</p>
+                                            <p className="text-sm text-amber-700/70 dark:text-amber-500/70">There are pending or quoted requests that this vendor can fulfill.</p>
                                         </div>
                                         <button
                                             onClick={() => {
                                                 const newItems = [...items];
-                                                pendingRequests.forEach(req => {
+                                                actionableRequests.forEach(req => {
                                                     const vp = vendorProducts?.find(vProd => vProd.PRODUCT_ID === req.PRODUCT_ID);
                                                     if (vp) {
                                                         const existingIdx = newItems.findIndex(i => i.product_id === req.PRODUCT_ID);
@@ -438,7 +459,7 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                             }}
                                             className="px-4 py-2 bg-amber-500 text-white rounded-lg font-semibold hover:bg-amber-600 transition-colors text-sm"
                                         >
-                                            Auto-Fill Pending
+                                            Auto-Fill Requests
                                         </button>
                                     </div>
                                 )}
@@ -505,6 +526,183 @@ const POModal = ({ isOpen, onClose, poToEdit }: { isOpen: boolean; onClose: () =
                                 className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0"
                             >
                                 {mutation.isPending ? 'Saving...' : poToEdit ? 'Save Changes' : 'Create PO'}
+                            </button>
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+const RFQModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+    const [step, setStep] = useState(1);
+    const [selectedRequests, setSelectedRequests] = useState<number[]>([]);
+    const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+
+    const queryClient = useQueryClient();
+
+    const { data: pendingRequests } = useQuery({
+        queryKey: ['requests', 'pending'],
+        queryFn: () => getRequests('pending'),
+        enabled: isOpen,
+    });
+
+    const { data: vendors } = useQuery({
+        queryKey: ['vendors'],
+        queryFn: getVendors,
+        enabled: isOpen,
+    });
+
+    const mutation = useMutation({
+        mutationFn: () => requestQuote({
+            request_ids: selectedRequests,
+            vendor_ids: selectedVendors,
+            requested_by: 'Current User' // Update with real user if available
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['requests'] });
+            onClose();
+            setStep(1);
+            setSelectedRequests([]);
+            setSelectedVendors([]);
+            alert('Quotes requested successfully!');
+        },
+    });
+
+    useEffect(() => {
+        if (!isOpen) {
+            setStep(1);
+            setSelectedRequests([]);
+            setSelectedVendors([]);
+        }
+    }, [isOpen]);
+
+    const handleToggleRequest = (id: number) => {
+        setSelectedRequests(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
+    };
+
+    const handleToggleVendor = (id: string) => {
+        setSelectedVendors(prev => prev.includes(id) ? prev.filter(v => v !== id) : [...prev, id]);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                />
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                    className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/10 flex flex-col max-h-[90vh]"
+                >
+                    <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-br from-indigo-500/20 to-purple-600/20" />
+
+                    <div className="relative p-8 pb-0 shrink-0">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+                                    <Send size={20} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold">Request for Quote (RFQ)</h2>
+                                    <p className="text-muted-foreground text-sm font-medium">Step {step} of 2</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-full transition-colors">
+                                <X size={20} className="text-muted-foreground" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-8 pt-4 overflow-y-auto flex-1">
+                        {step === 1 ? (
+                            <div className="space-y-4">
+                                <label className="text-sm font-semibold text-muted-foreground uppercase tracking-wider block">
+                                    Select Pending Requests
+                                </label>
+                                {!pendingRequests || pendingRequests.length === 0 ? (
+                                    <div className="text-center py-8 border-2 border-dashed border-border rounded-xl text-muted-foreground">
+                                        No pending requests available.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {pendingRequests.map(req => (
+                                            <div
+                                                key={req.REQUEST_ID}
+                                                onClick={() => handleToggleRequest(req.REQUEST_ID)}
+                                                className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${selectedRequests.includes(req.REQUEST_ID) ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-500/30' : 'bg-transparent border-border hover:bg-secondary/20'}`}
+                                            >
+                                                <div className="text-indigo-500">
+                                                    {selectedRequests.includes(req.REQUEST_ID) ? <CheckSquare size={20} /> : <Square size={20} />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="font-bold">{req.PRODUCT_NAME}</p>
+                                                    <p className="text-xs text-muted-foreground">Qty: {req.QUANTITY_NEEDED} | {req.URGENCY} urgency</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-lg">Select Vendors</h3>
+                                    <button onClick={() => setStep(1)} className="text-sm text-primary hover:underline">Back to Requests</button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {vendors?.map(v => (
+                                        <div
+                                            key={v.VENDOR_ID}
+                                            onClick={() => handleToggleVendor(v.VENDOR_ID)}
+                                            className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${selectedVendors.includes(v.VENDOR_ID) ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-500/30' : 'bg-secondary/10 border-border hover:bg-secondary/30'}`}
+                                        >
+                                            <div className="text-indigo-500">
+                                                {selectedVendors.includes(v.VENDOR_ID) ? <CheckSquare size={20} /> : <Square size={20} />}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold">{v.VENDOR_NAME}</p>
+                                                <p className="text-xs text-muted-foreground">{v.EMAIL || 'No email'}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-8 pt-0 shrink-0 flex justify-end gap-3">
+                         <button
+                            onClick={onClose}
+                            className="px-6 py-3 rounded-xl font-semibold hover:bg-secondary transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        {step === 1 ? (
+                             <button
+                                onClick={() => setStep(2)}
+                                disabled={selectedRequests.length === 0}
+                                className="px-8 py-3 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all disabled:opacity-50"
+                            >
+                                Continue
+                            </button>
+                        ) : (
+                             <button
+                                onClick={() => mutation.mutate()}
+                                disabled={mutation.isPending || selectedVendors.length === 0}
+                                className="px-8 py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/25 hover:shadow-xl transition-all disabled:opacity-50"
+                            >
+                                {mutation.isPending ? 'Sending...' : 'Send for Quote'}
                             </button>
                         )}
                     </div>
