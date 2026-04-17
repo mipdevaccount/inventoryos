@@ -104,7 +104,7 @@ const VendorDirectory = () => {
                     </div>
                 ) : (
                     filteredVendors?.map((vendor) => (
-                        <Link to={`/vendors/${vendor.VENDOR_ID}`} key={vendor.VENDOR_ID}>
+                        <Link to={`/vendors/${encodeURIComponent(vendor.VENDOR_ID)}`} key={vendor.VENDOR_ID}>
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}

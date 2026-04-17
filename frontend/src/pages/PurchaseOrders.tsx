@@ -129,7 +129,7 @@ const PurchaseOrders = () => {
                                                     <Pencil size={16} />
                                                 </button>
                                                 <Link
-                                                    to={`/purchase-orders/${po.PO_NUMBER}`}
+                                                    to={`/purchase-orders/${encodeURIComponent(po.PO_NUMBER)}`}
                                                     className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                                                 >
                                                     View
