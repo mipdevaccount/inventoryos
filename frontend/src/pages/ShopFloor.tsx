@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, submitRequest, updateStock, type Product } from '../lib/api';
-import { Search, MapPin, Ruler } from 'lucide-react';
+import { Search, MapPin, Ruler, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +10,35 @@ const ShopFloor = () => {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'request' | 'inventory'>('request');
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
+
+    const tableStockMutation = useMutation({
+        mutationFn: ({ productId, stock, oldStock, adjustedBy }: { productId: string, stock: number, oldStock: number, adjustedBy: string }) => 
+            updateStock(productId, stock, oldStock, adjustedBy, "Shop Floor List Adjustment"),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+        }
+    });
+
+    const handleTableStockUpdate = (e: React.MouseEvent, product: Product) => {
+        e.stopPropagation();
+        const input = window.prompt(`Correct the actual inventory level for ${product.PRODUCT_NAME}:`, (product.CURRENT_STOCK || 0).toString());
+        if (input !== null) {
+            const newStock = parseInt(input);
+            if (!isNaN(newStock) && newStock >= 0) {
+                const userName = user?.full_name || user?.email || "Unknown User";
+                tableStockMutation.mutate({ 
+                    productId: product.PRODUCT_ID, 
+                    stock: newStock,
+                    oldStock: product.CURRENT_STOCK || 0,
+                    adjustedBy: userName
+                });
+            } else {
+                alert("Please enter a valid stock number.");
+            }
+        }
+    };
 
     const { data: products, isLoading } = useQuery({
         queryKey: ['products'],
@@ -186,7 +215,19 @@ const ShopFloor = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className="font-bold text-xl">{stock}</span> <span className="text-sm text-muted-foreground font-medium">{product.UNIT_OF_MEASURE}</span>
+                                                <div className="inline-flex items-center justify-center gap-2">
+                                                    <div>
+                                                        <span className="font-bold text-xl">{stock}</span> <span className="text-sm text-muted-foreground font-medium">{product.UNIT_OF_MEASURE}</span>
+                                                    </div>
+                                                    <button 
+                                                        onClick={(e) => handleTableStockUpdate(e, product)}
+                                                        disabled={tableStockMutation.isPending && tableStockMutation.variables?.productId === product.PRODUCT_ID}
+                                                        className="text-muted-foreground hover:text-primary transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 flex-shrink-0"
+                                                        title="Adjust Inventory Output"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <span className={`px-4 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider border ${colorClass} shadow-sm inline-block min-w-[100px] text-center`}>
@@ -260,7 +301,8 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
     });
 
     const stockMutation = useMutation({
-        mutationFn: ({ productId, stock }: { productId: string, stock: number }) => updateStock(productId, stock),
+        mutationFn: ({ productId, stock, oldStock, adjustedBy }: { productId: string, stock: number, oldStock: number, adjustedBy: string }) => 
+            updateStock(productId, stock, oldStock, adjustedBy, "Request Modal Quick Adjust"),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
         }
@@ -271,7 +313,12 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
         if (input !== null) {
             const newStock = parseInt(input);
             if (!isNaN(newStock) && newStock >= 0) {
-                stockMutation.mutate({ productId: product!.PRODUCT_ID, stock: newStock });
+                stockMutation.mutate({ 
+                    productId: product!.PRODUCT_ID, 
+                    stock: newStock, 
+                    oldStock: product!.CURRENT_STOCK || 0,
+                    adjustedBy: user?.full_name || user?.email || "Unknown User"
+                });
             } else {
                 alert("Please enter a valid stock number.");
             }

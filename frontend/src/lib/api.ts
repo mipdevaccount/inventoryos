@@ -141,11 +141,24 @@ export const deleteProduct = async (productId: string) => {
     return { success: true };
 };
 
-export const updateStock = async (productId: string, currentStock: number) => {
+export const updateStock = async (productId: string, currentStock: number, oldStock?: number, adjustedBy?: string, notes?: string) => {
+    // 1. Update the actual stock
     const { error } = await supabase.from('products')
         .update({ current_stock: currentStock })
         .eq('product_id', productId);
     if (error) throw error;
+
+    // 2. Log the adjustment for reporting if tracking parameters exist
+    if (adjustedBy && oldStock !== undefined) {
+        await supabase.from('inventory_adjustments').insert([{
+            product_id: productId,
+            old_stock_level: oldStock,
+            new_stock_level: currentStock,
+            adjusted_by: adjustedBy,
+            notes: notes || "Manual floor adjustment"
+        }]);
+    }
+
     return { success: true };
 };
 
