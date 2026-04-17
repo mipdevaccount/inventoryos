@@ -30,16 +30,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const location = useLocation();
     const { user, logout } = useAuth();
 
-    const navItems = [
-        { path: '/', label: 'Shop Floor', icon: ShoppingCart },
-        { path: '/admin', label: 'Office Dashboard', icon: LayoutDashboard },
-        { path: '/products', label: 'Product Catalog', icon: Package },
-        { path: '/vendors', label: 'Vendors', icon: Building2 },
-        { path: '/purchase-orders', label: 'Purchase Orders', icon: FileText },
-        { path: '/reports', label: 'Reports', icon: BarChart3 },
-        { path: '/ordering-rules', label: 'Ordering Rules', icon: Scale },
-        ...(user?.role === 'admin' ? [{ path: '/users', label: 'User Management', icon: Users }] : [])
+    const allNavItems = [
+        { path: '/', label: 'Shop Floor', icon: ShoppingCart, roles: ['admin', 'office', 'shop_floor', 'user', 'read_only'] },
+        { path: '/admin', label: 'Office Dashboard', icon: LayoutDashboard, roles: ['admin', 'office'] },
+        { path: '/products', label: 'Product Catalog', icon: Package, roles: ['admin', 'office', 'shop_floor'] },
+        { path: '/vendors', label: 'Vendors', icon: Building2, roles: ['admin', 'office'] },
+        { path: '/purchase-orders', label: 'Purchase Orders', icon: FileText, roles: ['admin', 'office'] },
+        { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin'] },
+        { path: '/ordering-rules', label: 'Ordering Rules', icon: Scale, roles: ['admin'] },
+        { path: '/users', label: 'User Management', icon: Users, roles: ['admin'] }
     ];
+
+    const navItems = allNavItems.filter(item => item.roles.includes(user?.role || 'user'));
 
     return (
         <div className="min-h-screen bg-background text-foreground flex overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-100/20 via-background to-background dark:from-indigo-950/20">

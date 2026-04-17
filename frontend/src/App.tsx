@@ -36,22 +36,30 @@ function App() {
             
             <Route element={<ProtectedRoute />}>
               <Route element={<LayoutWrapper />}>
+                {/* Standard / Read Only (and everyone else) */}
                 <Route path="/" element={<ShopFloor />} />
-                <Route path="/admin" element={<OfficeDashboard />} />
-                <Route path="/products" element={<ProductCatalog />} />
-                <Route path="/vendors" element={<VendorDirectory />} />
-                <Route path="/vendors/:vendorId" element={<VendorProfile />} />
-                <Route path="/purchase-orders" element={<PurchaseOrders />} />
-                <Route path="/purchase-orders/:poNumber" element={<PODetail />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/ordering-rules" element={<OrderingRules />} />
-                <Route path="/reorder-recommendations" element={<ReorderRecommendations />} />
-              </Route>
-            </Route>
+                
+                {/* Shop Floor & above */}
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'office', 'shop_floor']} />}>
+                  <Route path="/products" element={<ProductCatalog />} />
+                </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-              <Route element={<LayoutWrapper />}>
-                <Route path="/users" element={<UserManagement />} />
+                {/* Office & above */}
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'office']} />}>
+                  <Route path="/admin" element={<OfficeDashboard />} />
+                  <Route path="/vendors" element={<VendorDirectory />} />
+                  <Route path="/vendors/:vendorId" element={<VendorProfile />} />
+                  <Route path="/purchase-orders" element={<PurchaseOrders />} />
+                  <Route path="/purchase-orders/:poNumber" element={<PODetail />} />
+                  <Route path="/reorder-recommendations" element={<ReorderRecommendations />} />
+                </Route>
+
+                {/* Admin only */}
+                <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/ordering-rules" element={<OrderingRules />} />
+                  <Route path="/users" element={<UserManagement />} />
+                </Route>
               </Route>
             </Route>
           </Routes>
