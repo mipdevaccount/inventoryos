@@ -262,15 +262,26 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
                     <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-br from-primary/20 to-indigo-600/20" />
 
                     <div className="relative p-8">
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-primary/25">
-                                {product.PRODUCT_NAME.charAt(0)}
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-indigo-600 flex items-center justify-center text-white font-bold text-3xl shadow-lg shadow-primary/25 shrink-0">
+                                    {product.PRODUCT_NAME.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 className="text-xl md:text-2xl font-bold line-clamp-1">Request Inventory</h2>
+                                    <p className="text-muted-foreground font-medium line-clamp-1">
+                                        {product.PRODUCT_NAME}
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-bold">Request Inventory</h2>
-                                <p className="text-muted-foreground font-medium">
-                                    {product.PRODUCT_NAME}
-                                </p>
+                            <div className="text-right flex-shrink-0 ml-4 hidden sm:block">
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">On Hand</p>
+                                <div className={`inline-flex items-center justify-center px-3 py-1 rounded-xl font-bold text-sm border
+                                    ${(product.CURRENT_STOCK || 0) < 5 ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' : 
+                                      (product.CURRENT_STOCK || 0) <= 10 ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' : 
+                                      'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'}`}>
+                                    {product.CURRENT_STOCK || 0}
+                                </div>
                             </div>
                         </div>
 
