@@ -10,6 +10,7 @@ CREATE TABLE products (
     description TEXT,
     location TEXT,
     unit_of_measure TEXT DEFAULT 'each',
+    current_stock INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );

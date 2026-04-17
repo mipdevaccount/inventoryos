@@ -97,15 +97,7 @@ export const getProducts = async (activeOnly = true) => {
     }
     const { data, error } = await query;
     if (error) throw error;
-    // Map to uppercase keys to match existing components
     return data.map(p => {
-        // Mock a consistent stock level based on product ID for the UI
-        const seedStr = p.product_id + p.product_name;
-        let mockStockSeed = 0;
-        for (let i = 0; i < seedStr.length; i++) {
-            mockStockSeed += seedStr.charCodeAt(i);
-        }
-        
         return {
             PRODUCT_ID: p.product_id,
             PRODUCT_NAME: p.product_name,
@@ -113,7 +105,7 @@ export const getProducts = async (activeOnly = true) => {
             LOCATION: p.location,
             UNIT_OF_MEASURE: p.unit_of_measure,
             IS_ACTIVE: p.is_active,
-            CURRENT_STOCK: mockStockSeed % 25 // 0 to 24 units
+            CURRENT_STOCK: p.current_stock || 0
         };
     });
 };
@@ -376,6 +368,24 @@ export const getPurchaseOrder = async (poNumber: string) => {
 export const updatePOStatus = async (poNumber: string, status: string) => {
     const { error } = await supabase.from('purchase_orders').update({ status, updated_at: new Date() }).eq('po_number', poNumber);
     if (error) throw error;
+
+    if (status === 'Received') {
+        const { data: items } = await supabase.from('po_items').select('product_id, quantity_ordered').eq('po_number', poNumber);
+        if (items) {
+            for (const item of items) {
+                // We use a try-catch pattern in case the user hasn't successfully run the SQL migration yet 
+                // to add 'current_stock' to their Supabase DB. This prevents the UI from crashing fully.
+                try {
+                    const { data: product } = await supabase.from('products').select('current_stock').eq('product_id', item.product_id).single();
+                    const currentStock = product?.current_stock || 0;
+                    await supabase.from('products').update({ current_stock: currentStock + item.quantity_ordered }).eq('product_id', item.product_id);
+                } catch (e) {
+                    console.error("Failed to update inventory. Missing current_stock column?", e);
+                }
+            }
+        }
+    }
+
     return { success: true };
 };
 
