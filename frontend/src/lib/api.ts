@@ -397,10 +397,27 @@ export const getRules = async () => {
 };
 
 export const createRule = async (data: any) => {
+    const { error } = await supabase.from('vendor_product_rules').insert([{
+        rule_id: data.rule_id,
+        vendor_id: data.vendor_id,
+        product_id: data.product_id,
+        min_qty: data.min_qty,
+        discount_pct: data.discount_pct,
+        notes: data.notes
+    }]);
+    if (error) throw error;
     return { success: true };
 };
 
 export const updateRule = async (ruleId: string, data: any) => {
+    const { error } = await supabase.from('vendor_product_rules')
+        .update({
+            min_qty: data.min_qty,
+            discount_pct: data.discount_pct,
+            notes: data.notes
+        })
+        .eq('rule_id', ruleId);
+    if (error) throw error;
     return { success: true };
 };
 
