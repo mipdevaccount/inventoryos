@@ -1,7 +1,7 @@
 # =============================================================================
 # PR Checks — runs on every pull request to dev
 # =============================================================================
-# This workflow runs automated quality checks for both Backend and Frontend.
+# This workflow runs automated quality checks for the Frontend.
 # =============================================================================
 
 name: PR Checks
@@ -11,33 +11,6 @@ on:
     branches: [dev]
 
 jobs:
-  backend-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
-
-      - name: Run linter
-        run: |
-          cd backend
-          pip install flake8
-          python -m flake8 . --max-line-length=120 --statistics
-
-      - name: Validate Backend Docker build
-        run: |
-          cd backend
-          docker build -t commander-backend:pr-check .
-
   frontend-checks:
     runs-on: ubuntu-latest
     steps:
@@ -68,16 +41,8 @@ jobs:
 
       - name: Structural Validations
         run: |
-          if [ ! -f backend/Dockerfile ]; then
-            echo "::error::Missing backend/Dockerfile"
-            exit 1
-          fi
           if [ ! -f frontend/Dockerfile ]; then
             echo "::error::Missing frontend/Dockerfile"
-            exit 1
-          fi
-          if [ ! -f backend/requirements.txt ]; then
-            echo "::error::Missing backend/requirements.txt"
             exit 1
           fi
           if [ ! -f frontend/package.json ]; then
