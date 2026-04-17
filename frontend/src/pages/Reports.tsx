@@ -327,7 +327,7 @@ const Reports = () => {
                     </div>
                 </div>
             </div>
-                </>
+                </div>
             ) : (
                 <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 rounded-3xl p-8 shadow-lg">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
