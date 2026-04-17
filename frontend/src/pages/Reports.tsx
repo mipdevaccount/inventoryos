@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getVendors, getPurchaseOrders, getInventoryAdjustments, getAllPOItems, getAllVendorProducts, getProducts } from '../lib/api';
-import { BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Building2, ClipboardList, AlertTriangle, ShieldAlert, BadgeDollarSign } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Building2, ClipboardList, AlertTriangle, ShieldAlert, BadgeDollarSign, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
 const Reports = () => {
     const [activeTab, setActiveTab] = useState<'procurement' | 'inventory'>('procurement');
+    const [selectedVendorForInsights, setSelectedVendorForInsights] = useState<any>(null);
     
     // Core Data Dependencies
     const { data: vendors } = useQuery({ queryKey: ['vendors'], queryFn: getVendors });
@@ -315,10 +316,15 @@ const Reports = () => {
                                 {topVendors.map((vendor) => {
                                     const vendorOrders = pos?.filter(p => p.VENDOR_ID === vendor.id).length || 0;
                                     return (
-                                        <tr key={vendor.id} className="group">
-                                            <td className="py-4 font-medium">{vendor.name}</td>
-                                            <td className="py-4 text-right">{vendorOrders}</td>
-                                            <td className="py-4 text-right font-mono">${vendor.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <tr key={vendor.id} className="group cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" onClick={() => setSelectedVendorForInsights(vendor)}>
+                                            <td className="py-4 font-medium flex flex-col">
+                                                <span>{vendor.name}</span>
+                                                <span className="text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 font-bold mt-1">
+                                                    Click for insights &rarr;
+                                                </span>
+                                            </td>
+                                            <td className="py-4 text-right align-top">{vendorOrders}</td>
+                                            <td className="py-4 text-right font-mono align-top">${vendor.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                     );
                                 })}
@@ -393,6 +399,136 @@ const Reports = () => {
                     </div>
                 </div>
             )}
+
+            {/* Vendor Insights Modal */}
+            <AnimatePresence>
+                {selectedVendorForInsights && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+                            onClick={() => setSelectedVendorForInsights(null)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-border/50 overflow-hidden flex flex-col max-h-[85vh]"
+                        >
+                            <div className="p-6 border-b border-border/50 flex justify-between items-center bg-muted/30">
+                                <div>
+                                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                                        <Building2 className="text-primary" size={24} />
+                                        {selectedVendorForInsights.name} Insights
+                                    </h2>
+                                    <p className="text-muted-foreground text-sm mt-1">
+                                        Operational Intelligence Profile
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedVendorForInsights(null)}
+                                    className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            
+                            <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                                {/* Lifetime Value */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-100 dark:bg-slate-800/50 p-4 rounded-2xl flex flex-col justify-center">
+                                        <span className="text-sm font-semibold text-muted-foreground mb-1 flex items-center gap-2"><ClipboardList size={16}/> Total Orders</span>
+                                        <span className="text-2xl font-bold">{pos?.filter(p => p.VENDOR_ID === selectedVendorForInsights.id).length || 0}</span>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100 p-4 rounded-2xl flex flex-col justify-center">
+                                        <span className="text-sm font-semibold opacity-75 mb-1 flex items-center gap-2"><DollarSign size={16}/> Lifetime Value</span>
+                                        <span className="text-2xl font-bold">${selectedVendorForInsights.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                </div>
+
+                                {/* Dynamic Intelligence */}
+                                <div className="space-y-4">
+                                    <h3 className="font-bold text-lg border-b border-border/50 pb-2">Intelligence Briefing</h3>
+                                    
+                                    {(() => {
+                                        const vendorId = selectedVendorForInsights.id;
+                                        const vps = vendorProducts?.filter(vp => vp.VENDOR_ID === vendorId) || [];
+                                        const vendorPoItems = poItems?.filter(pi => pi.VENDOR_ID === vendorId) || [];
+
+                                        let priceGouges = 0;
+                                        let savingsPotential = 0;
+                                        let itemsEvaluated = 0;
+
+                                        // Evaluate contract rate / generic variance
+                                        if (vendorProducts) {
+                                            vps.forEach(vp => {
+                                                const altVendors = vendorProducts.filter(alt => alt.PRODUCT_ID === vp.PRODUCT_ID && alt.VENDOR_ID !== vendorId);
+                                                if (altVendors.length > 0) {
+                                                    itemsEvaluated++;
+                                                    const minAltPrice = Math.min(...altVendors.map(a => a.PRICE || 0));
+                                                    if ((vp.PRICE || 0) > minAltPrice) {
+                                                        priceGouges++;
+                                                        savingsPotential += ((vp.PRICE || 0) - minAltPrice);
+                                                    }
+                                                }
+                                            });
+                                        }
+
+                                        // Compliance evaluation
+                                        let nonCompliantLineItems = 0;
+                                        if (vendorPoItems.length > 0 && vendorProducts) {
+                                            vendorPoItems.forEach(item => {
+                                                const negotiatedRate = vps.find(v => v.PRODUCT_ID === item.PRODUCT_ID)?.PRICE;
+                                                if (negotiatedRate && item.UNIT_PRICE > negotiatedRate) {
+                                                    nonCompliantLineItems++;
+                                                }
+                                            });
+                                        }
+                                        
+                                        const complianceRate = vendorPoItems.length > 0 ? Math.round(((vendorPoItems.length - nonCompliantLineItems) / vendorPoItems.length) * 100) : null;
+
+                                        return (
+                                            <div className="space-y-4">
+                                                {/* Price Competitiveness Node */}
+                                                <div className={`p-4 rounded-2xl border ${priceGouges > 0 ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' : 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'}`}>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <div className={`p-2 rounded-lg ${priceGouges > 0 ? 'bg-amber-200 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' : 'bg-green-200 dark:bg-green-500/20 text-green-700 dark:text-green-400'}`}><BadgeDollarSign size={18} /></div>
+                                                        <h4 className={`font-bold ${priceGouges > 0 ? 'text-amber-900 dark:text-amber-400' : 'text-green-900 dark:text-green-400'}`}>Price Competitiveness</h4>
+                                                    </div>
+                                                    <p className="text-sm font-medium">
+                                                        {itemsEvaluated === 0 
+                                                            ? "No overlapping market data available for the SKUs they supply." 
+                                                            : priceGouges > 0 
+                                                                ? `They are currently overcharging on ${priceGouges} overlapping SKUs compared to market baselines. Shifting those SKUs to alternate vendors would save $${savingsPotential.toFixed(2)}/unit.` 
+                                                                : "Vendor consistently offers the cheapest baseline price on shared SKUs."}
+                                                    </p>
+                                                </div>
+
+                                                {/* Compliance Node */}
+                                                <div className={`p-4 rounded-2xl border ${complianceRate !== null && complianceRate < 100 ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'}`}>
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <div className={`p-2 rounded-lg ${complianceRate !== null && complianceRate < 100 ? 'bg-purple-200 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'}`}><ShieldAlert size={18} /></div>
+                                                        <h4 className={`font-bold ${complianceRate !== null && complianceRate < 100 ? 'text-purple-900 dark:text-purple-400' : 'text-slate-900 dark:text-slate-200'}`}>Historical Order Compliance</h4>
+                                                    </div>
+                                                    <p className="text-sm font-medium">
+                                                        {complianceRate === null 
+                                                            ? "Not enough purchase order data to grade contract alignment." 
+                                                            : complianceRate === 100 
+                                                                ? "100% of historical orders were executed precisely on or under negotiated baseline prices." 
+                                                                : `${100 - complianceRate}% of orders fulfilled by this vendor were executed above our base catalog pricing. Investigate manual overrides or rogue quotes.`}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
