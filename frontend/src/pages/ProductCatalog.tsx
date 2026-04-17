@@ -1,7 +1,6 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, addProduct, updateProduct, deleteProduct, exportProductsCSV, uploadProductsCSV } from '../lib/api';
+import { getProducts, addProduct, updateProduct, deleteProduct, exportProductsCSV, uploadProductsCSV, getAllVendorProducts } from '../lib/api';
 import { Search, Plus, Package, MapPin, Ruler, X, QrCode, Printer, Download, Upload, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import QRCode from 'react-qr-code';
@@ -20,6 +19,11 @@ const ProductCatalog = () => {
     const { data: products, isLoading } = useQuery({
         queryKey: ['products'],
         queryFn: () => getProducts(true),
+    });
+
+    const { data: vendorProducts } = useQuery({
+        queryKey: ['vendorProducts'],
+        queryFn: getAllVendorProducts,
     });
 
     const uploadMutation = useMutation({
@@ -192,8 +196,8 @@ const ProductCatalog = () => {
                 </div>
             </div>
 
-            <div className="rounded-3xl border border-white/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md shadow-xl overflow-hidden">
-                <div className="overflow-x-auto">
+            <div className="rounded-3xl border border-white/20 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md shadow-xl overflow-hidden overflow-visible">
+                <div className="overflow-x-auto overflow-visible">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/30 text-muted-foreground font-semibold uppercase tracking-wider text-xs">
                             <tr>
@@ -206,7 +210,7 @@ const ProductCatalog = () => {
                                 <th className="px-6 py-6 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border/50">
+                        <tbody className="divide-y divide-border/50 relative">
                             {isLoading ? (
                                 <tr>
                                     <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
@@ -225,12 +229,37 @@ const ProductCatalog = () => {
                             ) : (
                                 filteredProducts?.map((product) => (
                                     <tr key={product.PRODUCT_ID} className="hover:bg-white/40 dark:hover:bg-white/5 transition-colors group">
-                                        <td className="px-8 py-5">
+                                        <td className="px-8 py-5 relative group/name">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold shadow-sm">
                                                     {product.PRODUCT_NAME.charAt(0)}
                                                 </div>
-                                                <span className="font-semibold text-base">{product.PRODUCT_NAME}</span>
+                                                <span className="font-semibold text-base cursor-help underline decoration-dashed decoration-slate-300 underline-offset-4">{product.PRODUCT_NAME}</span>
+                                            </div>
+                                            
+                                            {/* Unified Vendor Tooltip */}
+                                            <div className="absolute left-20 bottom-full mb-1 hidden group-hover/name:block z-[999]">
+                                                <div className="bg-slate-800 text-white text-sm rounded-xl p-3 shadow-2xl border border-slate-700 min-w-[220px]">
+                                                    <p className="font-bold text-[10px] uppercase tracking-wider text-slate-400 mb-2 border-b border-slate-700 pb-1 flex items-center gap-1"><Package size={12}/> Supplied By</p>
+                                                    {(() => {
+                                                        const suppliers = vendorProducts?.filter(vp => vp.PRODUCT_ID === product.PRODUCT_ID);
+                                                        if (!suppliers || suppliers.length === 0) {
+                                                            return <p className="text-slate-300 italic text-xs">No vendor assigned.</p>;
+                                                        }
+                                                        return (
+                                                            <ul className="space-y-1.5 flex flex-col">
+                                                                {suppliers.map(vp => (
+                                                                    <li key={vp.VENDOR_ID} className="flex justify-between items-center bg-white/5 px-2 py-1.5 rounded-lg border border-white/5">
+                                                                        <span className="font-medium text-xs">{vp.VENDOR_NAME}</span>
+                                                                        <span className="font-mono text-xs text-emerald-400 font-bold">${(vp.PRICE || 0).toFixed(2)}</span>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        );
+                                                    })()}
+                                                </div>
+                                                {/* Arrow */}
+                                                <div className="absolute left-8 -bottom-1 transform -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
