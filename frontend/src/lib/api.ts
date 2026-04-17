@@ -254,6 +254,7 @@ export const addVendor = async (data: any) => {
 export const updateVendor = async (vendorId: string, data: any) => {
     const { error } = await supabase.from('vendors')
         .update({
+            vendor_id: data.vendor_id,
             vendor_name: data.vendor_name,
             contact_name: data.contact_name,
             email: data.email,

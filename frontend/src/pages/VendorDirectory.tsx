@@ -278,9 +278,8 @@ const VendorModal = ({ isOpen, onClose, vendorToEdit }: { isOpen: boolean; onClo
                                 <input
                                     type="text"
                                     value={formData.vendor_id}
-                                    disabled={!!vendorToEdit}
                                     onChange={(e) => setFormData({ ...formData, vendor_id: e.target.value })}
-                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                     placeholder="e.g., V-001"
                                 />
                             </div>
