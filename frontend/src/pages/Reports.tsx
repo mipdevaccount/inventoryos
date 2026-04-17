@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getVendors, getPurchaseOrders } from '../lib/api';
-import { BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Building2 } from 'lucide-react';
+import { getVendors, getPurchaseOrders, getInventoryAdjustments } from '../lib/api';
+import { BarChart3, TrendingUp, DollarSign, PieChart, ArrowUpRight, ArrowDownRight, Building2, ClipboardList } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 
 const Reports = () => {
+    const [activeTab, setActiveTab] = useState<'procurement' | 'inventory'>('procurement');
     const { data: vendors } = useQuery({
         queryKey: ['vendors'],
         queryFn: getVendors,
@@ -12,6 +15,11 @@ const Reports = () => {
     const { data: pos } = useQuery({
         queryKey: ['purchaseOrders'],
         queryFn: getPurchaseOrders,
+    });
+
+    const { data: adjustments } = useQuery({
+        queryKey: ['inventoryAdjustments'],
+        queryFn: getInventoryAdjustments,
     });
 
     // Calculate metrics
@@ -40,14 +48,32 @@ const Reports = () => {
 
     return (
         <div className="space-y-8 pb-20">
-            <div className="space-y-2">
-                <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                    Reports & Analytics
-                </h1>
-                <p className="text-muted-foreground text-lg">Insights into procurement performance and spend.</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                        Reports & Analytics
+                    </h1>
+                    <p className="text-muted-foreground text-lg">Insights into procurement performance and inventory history.</p>
+                </div>
+                <div className="flex bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-1.5 rounded-2xl w-fit border border-border shadow-sm">
+                    <button
+                        onClick={() => setActiveTab('procurement')}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${activeTab === 'procurement' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        Procurement
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('inventory')}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all ${activeTab === 'inventory' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        Inventory Adjustments
+                    </button>
+                </div>
             </div>
 
-            {/* KPI Cards */}
+            {activeTab === 'procurement' ? (
+                <>
+                    {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -172,6 +198,72 @@ const Reports = () => {
                     </div>
                 </div>
             </div>
+                </>
+            ) : (
+                <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 rounded-3xl p-8 shadow-lg">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                        <ClipboardList size={20} className="text-primary" />
+                        Manual Inventory Adjustments Log
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-white/50 dark:bg-slate-800/50 border-b border-border/50">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Date & Time</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Product</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Previous</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">New</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Delta</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Adjusted By</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                                {(!adjustments || adjustments.length === 0) ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                                            No manual inventory adjustments have been logged yet.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    adjustments.map((log) => {
+                                        const delta = log.NEW_STOCK - log.OLD_STOCK;
+                                        const isPositive = delta > 0;
+                                        const isNegative = delta < 0;
+                                        return (
+                                            <tr key={log.ADJUSTMENT_ID} className="hover:bg-white/40 dark:hover:bg-white/5 transition-colors">
+                                                <td className="px-6 py-4 text-sm font-medium">
+                                                    {format(new Date(log.ADJUSTMENT_DATE), 'MMM d, yyyy HH:mm')}
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-foreground text-sm max-w-xs truncate" title={log.PRODUCT_NAME}>{log.PRODUCT_NAME}</div>
+                                                    <div className="text-xs text-muted-foreground font-mono mt-0.5">{log.PRODUCT_ID}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-mono text-muted-foreground">
+                                                    {log.OLD_STOCK}
+                                                </td>
+                                                <td className="px-6 py-4 text-center font-bold text-lg font-mono">
+                                                    {log.NEW_STOCK}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg font-bold text-xs border shadow-sm
+                                                        ${isPositive ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/30' : 
+                                                          isNegative ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/30' : 
+                                                          'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}>
+                                                        {delta > 0 ? '+' : ''}{delta}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right text-sm font-medium">
+                                                    {log.ADJUSTED_BY}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -162,6 +162,31 @@ export const updateStock = async (productId: string, currentStock: number, oldSt
     return { success: true };
 };
 
+export const getInventoryAdjustments = async () => {
+    const { data, error } = await supabase
+        .from('inventory_adjustments')
+        .select(`
+            *,
+            products (
+                product_name
+            )
+        `)
+        .order('adjustment_date', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(d => ({
+        ADJUSTMENT_ID: d.id,
+        PRODUCT_ID: d.product_id,
+        PRODUCT_NAME: d.products?.product_name || 'Unknown Product',
+        OLD_STOCK: d.old_stock_level,
+        NEW_STOCK: d.new_stock_level,
+        ADJUSTED_BY: d.adjusted_by,
+        NOTES: d.notes,
+        ADJUSTMENT_DATE: d.adjustment_date,
+    }));
+};
+
 // === REQUESTS ===
 export const getRequests = async (status?: string) => {
     let query = supabase.from('requests').select('*, products(product_name, location, unit_of_measure)').order('submitted_at', { ascending: false });
