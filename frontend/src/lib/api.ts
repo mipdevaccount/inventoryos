@@ -337,6 +337,16 @@ export const createPurchaseOrder = async (data: { vendor_id: string; items: any[
     const { error: itemsError } = await supabase.from('po_items').insert(itemsData);
     if (itemsError) throw itemsError;
 
+    // Automatically clear out pending/quoted requests for these products so they no longer appear
+    // in the 'actionable requests' list, as they are now officially ordered.
+    const productIds = data.items.map(item => item.product_id);
+    if (productIds.length > 0) {
+        await supabase.from('requests')
+            .update({ status: 'ordered', updated_at: new Date() })
+            .in('product_id', productIds)
+            .in('status', ['pending', 'quote_requested']);
+    }
+
     return { po_number: poNumber, success: true };
 };
 
