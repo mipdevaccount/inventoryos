@@ -6,6 +6,7 @@ import { Lock, Mail, Loader2 } from 'lucide-react';
 const Login: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useAuth();
@@ -16,6 +17,11 @@ const Login: React.FC = () => {
         setError('');
         setIsSubmitting(true);
         try {
+            if (rememberMe) {
+                localStorage.setItem('remember_me', 'true');
+            } else {
+                localStorage.removeItem('remember_me');
+            }
             await login({ email, password });
             navigate('/');
         } catch (err: any) {
@@ -79,6 +85,19 @@ const Login: React.FC = () => {
                                     required
                                 />
                             </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <label className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 accent-indigo-600"
+                                />
+                                Remember me
+                            </label>
+                            <a href="#" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">Forgot password?</a>
                         </div>
 
                         <button
