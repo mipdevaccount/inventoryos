@@ -141,6 +141,14 @@ export const deleteProduct = async (productId: string) => {
     return { success: true };
 };
 
+export const updateStock = async (productId: string, currentStock: number) => {
+    const { error } = await supabase.from('products')
+        .update({ current_stock: currentStock })
+        .eq('product_id', productId);
+    if (error) throw error;
+    return { success: true };
+};
+
 // === REQUESTS ===
 export const getRequests = async (status?: string) => {
     let query = supabase.from('requests').select('*, products(product_name, location, unit_of_measure)').order('submitted_at', { ascending: false });

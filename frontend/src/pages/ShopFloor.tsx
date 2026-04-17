@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, submitRequest, type Product } from '../lib/api';
+import { getProducts, submitRequest, updateStock, type Product } from '../lib/api';
 import { Search, MapPin, Ruler } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -249,6 +249,25 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
         },
     });
 
+    const stockMutation = useMutation({
+        mutationFn: ({ productId, stock }: { productId: string, stock: number }) => updateStock(productId, stock),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+        }
+    });
+
+    const handleStockUpdate = () => {
+        const input = window.prompt(`Correct the actual inventory level for ${product?.PRODUCT_NAME}:`, (product?.CURRENT_STOCK || 0).toString());
+        if (input !== null) {
+            const newStock = parseInt(input);
+            if (!isNaN(newStock) && newStock >= 0) {
+                stockMutation.mutate({ productId: product!.PRODUCT_ID, stock: newStock });
+            } else {
+                alert("Please enter a valid stock number.");
+            }
+        }
+    };
+
     if (!isOpen || !product) return null;
 
     return (
@@ -285,12 +304,20 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
                             </div>
                             <div className="text-right flex-shrink-0 ml-4 hidden sm:block">
                                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">On Hand</p>
-                                <div className={`inline-flex items-center justify-center px-3 py-1 rounded-xl font-bold text-sm border
-                                    ${(product.CURRENT_STOCK || 0) < 5 ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' : 
-                                      (product.CURRENT_STOCK || 0) <= 10 ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' : 
-                                      'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'}`}>
-                                    {product.CURRENT_STOCK || 0}
-                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={handleStockUpdate}
+                                    disabled={stockMutation.isPending}
+                                    title="Click to correct actual stock level"
+                                    className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold text-sm border shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:hover:scale-100
+                                        ${(product.CURRENT_STOCK || 0) < 5 ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' : 
+                                          (product.CURRENT_STOCK || 0) <= 10 ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' : 
+                                          'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'}`}>
+                                    {stockMutation.isPending ? '...' : (product.CURRENT_STOCK || 0)}
+                                </button>
+                                <p className="text-[8px] mt-1 text-muted-foreground max-w-[80px] leading-tight ml-auto cursor-pointer" onClick={handleStockUpdate}>
+                                    Click to correct stock level
+                                </p>
                             </div>
                         </div>
 
