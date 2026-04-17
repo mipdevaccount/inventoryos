@@ -224,7 +224,16 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
             setUrgency('medium');
             setNotes('');
             setRequestedUnit(product?.UNIT_OF_MEASURE || 'Each');
+            
+            // Lock body scroll and prevent background tapping on mobile
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
         }
+        
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
+        };
     }, [isOpen, user, product]);
 
     const mutation = useMutation({
@@ -244,13 +253,13 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                    className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-pointer"
                 />
 
                 <motion.div
