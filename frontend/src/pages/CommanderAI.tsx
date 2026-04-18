@@ -92,7 +92,7 @@ const CommanderAI = () => {
                                 <Bot size={16} className="text-white" />
                             </div>
                         )}
-                        <div className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${
+                        <div className={`max-w-[85%] rounded-2xl px-6 py-5 shadow-sm ${
                             msg.role === 'user' 
                             ? 'bg-primary text-primary-foreground rounded-tr-none' 
                             : 'bg-white dark:bg-slate-800 border border-border/50 rounded-tl-none prose dark:prose-invert prose-sm max-w-none'
@@ -101,12 +101,65 @@ const CommanderAI = () => {
                                 <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                             ) : (
                                 <div className="text-sm space-y-4">
-                                    {msg.content.split('\n\n').map((paragraph, i) => {
-                                        if (paragraph.startsWith('|') || paragraph.startsWith('-')) {
-                                            // Crude format block for lists/tables if AI spits it out natively
-                                            return <pre key={i} className="bg-slate-100 dark:bg-slate-900 overflow-x-auto p-4 rounded-lg font-mono text-xs">{paragraph}</pre>;
+                                    {msg.content.split('\n\n').map((block, i) => {
+                                        // Handle Headings
+                                        if (block.startsWith('### ')) return <h3 key={i} className="text-lg font-bold text-foreground mt-4 mb-2">{block.replace('### ', '')}</h3>;
+                                        if (block.startsWith('## ')) return <h2 key={i} className="text-xl font-bold text-foreground mt-5 mb-2">{block.replace('## ', '')}</h2>;
+                                        if (block.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold text-foreground mt-6 mb-3">{block.replace('# ', '')}</h1>;
+
+                                        // Handle Tables
+                                        if (block.trim().startsWith('|')) {
+                                            const rows = block.trim().split('\n');
+                                            return (
+                                                <div key={i} className="overflow-x-auto rounded-xl border border-border/50 my-4 shadow-sm">
+                                                    <table className="w-full text-left border-collapse text-xs">
+                                                        <tbody>
+                                                            {rows.map((row, rowIndex) => {
+                                                                if (row.includes('|---') || row.trim() === '') return null; // Skip separator row
+                                                                const cells = row.split('|').filter(c => c.trim() !== '' || row.indexOf(c) > 0 && row.indexOf(c) < row.length - 1).map(c => c.trim());
+                                                                // The above keeps empty cells if they are between pipes, but strips outer empty strings from the split.
+                                                                const actualCells = row.split('|').slice(1, -1).map(c => c.trim());
+                                                                if (actualCells.length === 0) return null;
+
+                                                                const CellTag = rowIndex === 0 ? 'th' : 'td';
+                                                                const cellClasses = rowIndex === 0 
+                                                                    ? "p-3 font-semibold bg-slate-50 dark:bg-slate-900 border-b border-border/50 whitespace-nowrap text-slate-700 dark:text-slate-300"
+                                                                    : "p-3 border-b border-border/10 text-slate-600 dark:text-slate-400";
+                                                                
+                                                                return (
+                                                                    <tr key={rowIndex} className={rowIndex !== 0 ? "hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors" : ""}>
+                                                                        {actualCells.map((cell, cellIndex) => (
+                                                                            <CellTag key={cellIndex} className={cellClasses} dangerouslySetInnerHTML={{ __html: cell.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                                                        ))}
+                                                                    </tr>
+                                                                )
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            );
                                         }
-                                        return <p key={i} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />;
+
+                                        // Handle Lists
+                                        if (block.trim().startsWith('- ')) {
+                                            const items = block.trim().split('\n');
+                                            return (
+                                                <ul key={i} className="list-disc pl-5 space-y-2 my-3 text-slate-700 dark:text-slate-300">
+                                                    {items.map((item, itemIdx) => (
+                                                        <li key={itemIdx} dangerouslySetInnerHTML={{ __html: item.replace(/^- /, '').replace(/\*\*(.*?)\*\*/g, '<strong className="text-foreground">$1</strong>') }} />
+                                                    ))}
+                                                </ul>
+                                            );
+                                        }
+
+                                        // Regular Paragraphs
+                                        let htmlContent = block
+                                            .replace(/\*\*(.*?)\*\*/g, '<strong className="text-foreground">$1</strong>')
+                                            .replace(/\*(.*?)\*/g, '<em className="text-slate-600 dark:text-slate-400">$1</em>')
+                                            .replace(/`([^`]+)`/g, '<code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-mono text-xs">$1</code>')
+                                            .replace(/\n/g, '<br />');
+
+                                        return <p key={i} className="leading-relaxed text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
                                     })}
                                 </div>
                             )}
