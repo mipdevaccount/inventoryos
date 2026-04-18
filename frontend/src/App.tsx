@@ -15,7 +15,7 @@ import OrderingRules from './pages/OrderingRules';
 import ReorderRecommendations from './pages/ReorderRecommendations';
 import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
-
+import CommanderAI from './pages/CommanderAI';
 
 const queryClient = new QueryClient();
 
@@ -59,6 +59,10 @@ function App() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/ordering-rules" element={<OrderingRules />} />
                   <Route path="/users" element={<UserManagement />} />
+                </Route>
+                {/* Admin and Office users only for Commander AI */}
+                <Route element={<ProtectedRoute allowedRoles={['admin', 'office']} />}>
+                  <Route path="/ai" element={<CommanderAI />} />
                 </Route>
               </Route>
             </Route>

@@ -14,7 +14,8 @@ import {
     Users,
     Scale,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Sparkles
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/products', label: 'Product Catalog', icon: Package, roles: ['admin', 'office', 'shop_floor'] },
         { path: '/vendors', label: 'Vendors', icon: Building2, roles: ['admin', 'office'] },
         { path: '/purchase-orders', label: 'Purchase Orders', icon: FileText, roles: ['admin', 'office'] },
+        { path: '/ai', label: 'Commander AI', icon: Sparkles, roles: ['admin', 'office'] },
         { path: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin'] },
         { path: '/ordering-rules', label: 'Ordering Rules', icon: Scale, roles: ['admin'] },
         { path: '/users', label: 'User Management', icon: Users, roles: ['admin'] }
