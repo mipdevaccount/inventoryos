@@ -588,6 +588,8 @@ export const requestQuote = async (data: any) => {
 };
 export const exportProductsCSV = async () => {};
 export const uploadProductsCSV = async (file?: any) => {};
+export const exportVendorsCSV = async () => {};
+export const uploadVendorsCSV = async (file?: any) => {};
 export const importCSVData = async (table: string, data: any[]) => {};
 export const updateSettings = async (settings: any) => {};
 

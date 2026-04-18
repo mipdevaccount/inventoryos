@@ -22,9 +22,9 @@ const CommanderAI = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Context queries
-    const { data: products } = useQuery({ queryKey: ['products'], queryFn: getProducts });
-    const { data: vendors } = useQuery({ queryKey: ['vendors'], queryFn: getVendors });
-    const { data: requests } = useQuery({ queryKey: ['requests'], queryFn: getRequests });
+    const { data: products } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() });
+    const { data: vendors } = useQuery({ queryKey: ['vendors'], queryFn: () => getVendors() });
+    const { data: requests } = useQuery({ queryKey: ['requests'], queryFn: () => getRequests() });
 
     useEffect(() => {
         if (scrollRef.current) {
