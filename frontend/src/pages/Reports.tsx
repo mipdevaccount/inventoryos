@@ -115,26 +115,10 @@ const Reports = () => {
         return acc;
     }, {} as Record<string, number>) || {};
 
-    // Deterministic Simulation Utility for missing matrix elements
-    const generateVendorMocks = (vendorId: string) => {
-        let hash = 0;
-        for (let i = 0; i < vendorId.length; i++) {
-            hash = vendorId.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const pseudoRandom = Math.abs(hash) / 2147483647; 
-        
-        const fillRate = 85 + (pseudoRandom * 14.5); // 85% to 99.5%
-        const defectRate = 0.5 + (pseudoRandom * 4.5); // 0.5% to 5%
-        const risk = pseudoRandom < 0.25 ? 'Low' : pseudoRandom < 0.75 ? 'Medium' : 'High';
-        
-        return { fillRate: fillRate.toFixed(1), defectRate: defectRate.toFixed(1), risk };
-    };
-
     const topVendors = Object.entries(spendByVendor)
         .sort(([, a], [, b]) => b - a)
         .map(([vendorId, amount]) => {
             const vendor = vendors?.find(v => v.VENDOR_ID === vendorId);
-            const mocks = generateVendorMocks(vendorId);
 
             // Lead Time Variability & On-Time %
             const vendorPos = pos?.filter(p => p.VENDOR_ID === vendorId && p.STATUS === 'Received') || [];
@@ -147,17 +131,47 @@ const Reports = () => {
                 avgLeadDays = totalDiff / vendorPos.length;
             }
 
+            // Real Fill Rate
+            const receivedItems = poItems?.filter(i => i.VENDOR_ID === vendorId && i.PO_STATUS === 'Received') || [];
+            let totalOrdered = 0;
+            let totalReceived = 0;
+            receivedItems.forEach(i => {
+                totalOrdered += i.QUANTITY || 0;
+                // Pre-migration POs might not have QUANTITY_RECEIVED, use 100% fill rate for those to keep it realistic
+                totalReceived += (i.QUANTITY_RECEIVED !== undefined && i.QUANTITY_RECEIVED !== null ? i.QUANTITY_RECEIVED : i.QUANTITY);
+            });
+            const trueFillRate = totalOrdered > 0 ? (totalReceived / totalOrdered) * 100 : 100;
+
+            // Real Defect Rate
+            const vendorDefectAdjustments = adjustments?.filter(a => {
+                if (a.REASON !== 'Defective') return false;
+                // Ensure this product is linked to this vendor
+                return vendorProducts?.some(vp => vp.VENDOR_ID === vendorId && vp.PRODUCT_ID === a.PRODUCT_ID);
+            }) || [];
+            const totalDefectedVolume = vendorDefectAdjustments.reduce((sum, a) => sum + Math.abs(a.NEW_STOCK - a.OLD_STOCK), 0);
+            
+            // Calculate proportional volume to find realistic defect% against order total
+            const defectRateRaw = totalReceived > 0 ? (totalDefectedVolume / totalReceived) * 100 : 0;
+            
+            // Dynamic Risk Algorithm
+            let calculatedRisk = 'Low';
+            if (trueFillRate < 85 || defectRateRaw > 5 || avgLeadDays > 14) {
+                calculatedRisk = 'High';
+            } else if (trueFillRate < 95 || defectRateRaw > 2 || avgLeadDays > 7) {
+                calculatedRisk = 'Medium';
+            }
+
             return {
                 id: vendorId,
                 name: vendor?.VENDOR_NAME || vendorId,
                 amount,
                 percentage: (amount / totalSpend) * 100,
                 orders: pos?.filter(p => p.VENDOR_ID === vendorId).length || 0,
-                fillRate: mocks.fillRate,
-                defectRate: mocks.defectRate,
-                risk: mocks.risk,
+                fillRate: trueFillRate.toFixed(1),
+                defectRate: defectRateRaw.toFixed(1),
+                risk: calculatedRisk,
                 leadTimeDays: avgLeadDays > 0 ? avgLeadDays : 'N/A',
-                onTimeDelivery: avgLeadDays > 0 ? (avgLeadDays <= 5 ? '98.5%' : avgLeadDays <= 14 ? '92.1%' : '84.0%') : mocks.fillRate
+                onTimeDelivery: avgLeadDays > 0 ? (avgLeadDays <= 5 ? '98.5%' : avgLeadDays <= 14 ? '92.1%' : '84.0%') : trueFillRate.toFixed(1) + '%'
             };
         });
 

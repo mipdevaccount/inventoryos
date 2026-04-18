@@ -141,7 +141,7 @@ export const deleteProduct = async (productId: string) => {
     return { success: true };
 };
 
-export const updateStock = async (productId: string, currentStock: number, oldStock?: number, adjustedBy?: string, notes?: string) => {
+export const updateStock = async (productId: string, currentStock: number, oldStock?: number, adjustedBy?: string, notes?: string, reason?: string) => {
     // 1. Update the actual stock
     const { error } = await supabase.from('products')
         .update({ current_stock: currentStock })
@@ -155,7 +155,8 @@ export const updateStock = async (productId: string, currentStock: number, oldSt
             old_stock_level: oldStock,
             new_stock_level: currentStock,
             adjusted_by: adjustedBy,
-            notes: notes || "Manual floor adjustment"
+            notes: notes || "Manual floor adjustment",
+            reason: reason || 'correction'
         }]);
         
         if (auditError) {
@@ -189,6 +190,7 @@ export const getInventoryAdjustments = async () => {
         ADJUSTED_BY: d.adjusted_by,
         NOTES: d.notes,
         ADJUSTMENT_DATE: d.adjustment_date,
+        REASON: d.reason || 'correction'
     }));
 };
 
@@ -421,7 +423,7 @@ export const getPurchaseOrder = async (poNumber: string) => {
             PRODUCT_NAME: i.products?.product_name || '',
             UNIT_OF_MEASURE: i.products?.unit_of_measure || '',
             QUANTITY_ORDERED: i.quantity_ordered,
-            QUANTITY_RECEIVED: 0,
+            QUANTITY_RECEIVED: i.quantity_received || 0,
             UNIT_PRICE: i.unit_price
         }))
     };
@@ -429,7 +431,7 @@ export const getPurchaseOrder = async (poNumber: string) => {
 
 export const getAllPOItems = async () => {
     // Used specifically for the Intelligence Hub variance validations
-    const { data, error } = await supabase.from('po_items').select('*, purchase_orders(vendor_id, created_at), products(product_name)');
+    const { data, error } = await supabase.from('po_items').select('*, purchase_orders(vendor_id, created_at, status), products(product_name)');
     if (error) throw error;
     
     return data.map((i: any) => ({
@@ -437,8 +439,10 @@ export const getAllPOItems = async () => {
         PRODUCT_ID: i.product_id,
         PRODUCT_NAME: i.products?.product_name || '',
         QUANTITY: i.quantity_ordered,
+        QUANTITY_RECEIVED: i.quantity_received || 0,
         UNIT_PRICE: i.unit_price,
         VENDOR_ID: i.purchase_orders?.vendor_id || '',
+        PO_STATUS: i.purchase_orders?.status || '',
         CREATED_AT: i.purchase_orders?.created_at || new Date().toISOString()
     }));
 };
@@ -446,24 +450,30 @@ export const getAllPOItems = async () => {
 export const updatePOStatus = async (poNumber: string, status: string) => {
     const { error } = await supabase.from('purchase_orders').update({ status, updated_at: new Date() }).eq('po_number', poNumber);
     if (error) throw error;
+    return { success: true };
+};
 
-    if (status === 'Received') {
-        const { data: items } = await supabase.from('po_items').select('product_id, quantity_ordered').eq('po_number', poNumber);
-        if (items) {
-            for (const item of items) {
-                // We use a try-catch pattern in case the user hasn't successfully run the SQL migration yet 
-                // to add 'current_stock' to their Supabase DB. This prevents the UI from crashing fully.
-                try {
-                    const { data: product } = await supabase.from('products').select('current_stock').eq('product_id', item.product_id).single();
-                    const currentStock = product?.current_stock || 0;
-                    await supabase.from('products').update({ current_stock: currentStock + item.quantity_ordered }).eq('product_id', item.product_id);
-                } catch (e) {
-                    console.error("Failed to update inventory. Missing current_stock column?", e);
-                }
+export const receivePurchaseOrder = async (poNumber: string, items: { product_id: string, quantity_received: number }[]) => {
+    // 1. Mark PO as received
+    const { error: poError } = await supabase.from('purchase_orders').update({ status: 'Received', updated_at: new Date() }).eq('po_number', poNumber);
+    if (poError) throw poError;
+
+    // 2. Loop through and update po_items 'quantity_received' AND products 'current_stock'
+    for (const item of items) {
+        if (item.quantity_received > 0) {
+            // Update po_items
+            await supabase.from('po_items').update({ quantity_received: item.quantity_received }).match({ po_number: poNumber, product_id: item.product_id });
+
+            // Update product stock
+            try {
+                const { data: product } = await supabase.from('products').select('current_stock').eq('product_id', item.product_id).single();
+                const currentStock = product?.current_stock || 0;
+                await supabase.from('products').update({ current_stock: currentStock + item.quantity_received }).eq('product_id', item.product_id);
+            } catch (e) {
+                console.error("Failed to update inventory. Missing current_stock column?", e);
             }
         }
     }
-
     return { success: true };
 };
 

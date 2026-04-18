@@ -9,13 +9,14 @@ const ShopFloor = () => {
     const [search, setSearch] = useState('');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'request' | 'inventory'>('request');
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
     const tableStockMutation = useMutation({
-        mutationFn: ({ productId, stock, oldStock, adjustedBy }: { productId: string, stock: number, oldStock: number, adjustedBy: string }) => 
-            updateStock(productId, stock, oldStock, adjustedBy, "Shop Floor List Adjustment"),
+        mutationFn: ({ productId, stock, oldStock, adjustedBy, reason }: { productId: string, stock: number, oldStock: number, adjustedBy: string, reason?: string }) => 
+            updateStock(productId, stock, oldStock, adjustedBy, "Shop Floor List Adjustment", reason),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['products'] });
         }
@@ -23,21 +24,8 @@ const ShopFloor = () => {
 
     const handleTableStockUpdate = (e: React.MouseEvent, product: Product) => {
         e.stopPropagation();
-        const input = window.prompt(`Correct the actual inventory level for ${product.PRODUCT_NAME}:`, (product.CURRENT_STOCK || 0).toString());
-        if (input !== null) {
-            const newStock = parseInt(input);
-            if (!isNaN(newStock) && newStock >= 0) {
-                const userName = user?.full_name || user?.email || "Unknown User";
-                tableStockMutation.mutate({ 
-                    productId: product.PRODUCT_ID, 
-                    stock: newStock,
-                    oldStock: product.CURRENT_STOCK || 0,
-                    adjustedBy: userName
-                });
-            } else {
-                alert("Please enter a valid stock number.");
-            }
-        }
+        setSelectedProduct(product);
+        setIsAdjustModalOpen(true);
     };
 
     const { data: products, isLoading } = useQuery({
@@ -254,12 +242,99 @@ const ShopFloor = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 product={selectedProduct}
+                onAdjustClick={() => setIsAdjustModalOpen(true)}
+            />
+
+            <AdjustModal
+                isOpen={isAdjustModalOpen}
+                onClose={() => setIsAdjustModalOpen(false)}
+                product={selectedProduct}
+                mutation={tableStockMutation}
+                userName={user?.full_name || user?.email || "Unknown User"}
             />
         </div>
     );
 };
 
-const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: () => void; product: Product | null }) => {
+const AdjustModal = ({ isOpen, onClose, product, mutation, userName }: { isOpen: boolean; onClose: () => void; product: Product | null; mutation: any; userName: string }) => {
+    const [newStock, setNewStock] = useState<number | ''>('');
+    const [reason, setReason] = useState('Correction');
+
+    useEffect(() => {
+        if (isOpen && product) {
+            setNewStock(product.CURRENT_STOCK ?? 0);
+            setReason('Correction');
+            document.body.style.overflow = 'hidden';
+            document.body.style.touchAction = 'none';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.body.style.touchAction = 'unset';
+        };
+    }, [isOpen, product]);
+
+    if (!isOpen || !product) return null;
+
+    const isDecreasing = typeof newStock === 'number' && newStock < (product.CURRENT_STOCK ?? 0);
+
+    return (
+        <AnimatePresence>
+            <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-md cursor-pointer" />
+                <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden border border-white/10 p-6">
+                    <h2 className="text-xl font-bold mb-1">Adjust Inventory</h2>
+                    <p className="text-muted-foreground mb-6 text-sm">Correct actual numbers for {product.PRODUCT_NAME}.</p>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="text-sm font-semibold text-muted-foreground">New Stock Level</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                value={newStock} 
+                                onChange={e => setNewStock(e.target.value ? parseInt(e.target.value) : '')} 
+                                className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all mt-1 font-bold"
+                            />
+                        </div>
+
+                        {isDecreasing && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1">
+                                <label className="text-sm font-semibold text-muted-foreground">Reason for Decrease</label>
+                                <select 
+                                    value={reason} 
+                                    onChange={e => setReason(e.target.value)} 
+                                    className="w-full px-4 py-3 rounded-xl border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none text-sm"
+                                >
+                                    <option value="Correction">Periodic Audit / Correction</option>
+                                    <option value="Defective">Defective / Damaged</option>
+                                    <option value="Theft">Theft / Unaccounted</option>
+                                </select>
+                                {reason === 'Defective' && <p className="text-xs text-amber-500 mt-2 p-2 bg-amber-500/10 rounded-lg">Items returning as Defective will impact the Vendor's quality rating.</p>}
+                            </motion.div>
+                        )}
+                    </div>
+
+                    <div className="mt-8 flex gap-3">
+                        <button onClick={onClose} className="flex-1 py-3 px-4 rounded-xl font-semibold border border-border hover:bg-secondary transition-colors">Cancel</button>
+                        <button 
+                            onClick={() => {
+                                if (typeof newStock !== 'number' || isNaN(newStock)) return alert('Enter a valid number.');
+                                mutation.mutate({ productId: product.PRODUCT_ID, stock: newStock, oldStock: product.CURRENT_STOCK || 0, adjustedBy: userName, reason: isDecreasing ? reason : 'Correction' });
+                                onClose();
+                            }} 
+                            disabled={mutation.isPending}
+                            className="flex-[2] py-3 px-4 rounded-xl font-semibold bg-primary text-white shadow-lg shadow-primary/25 disabled:opacity-50"
+                        >
+                            {mutation.isPending ? 'Saving...' : 'Save Adjustment'}
+                        </button>
+                    </div>
+                </motion.div>
+            </div>
+        </AnimatePresence>
+    );
+};
+
+const RequestModal = ({ isOpen, onClose, product, onAdjustClick }: { isOpen: boolean; onClose: () => void; product: Product | null; onAdjustClick: () => void }) => {
     const { user } = useAuth();
     const [quantity, setQuantity] = useState(1);
     const [urgency, setUrgency] = useState('medium');
@@ -300,29 +375,9 @@ const RequestModal = ({ isOpen, onClose, product }: { isOpen: boolean; onClose: 
         },
     });
 
-    const stockMutation = useMutation({
-        mutationFn: ({ productId, stock, oldStock, adjustedBy }: { productId: string, stock: number, oldStock: number, adjustedBy: string }) => 
-            updateStock(productId, stock, oldStock, adjustedBy, "Request Modal Quick Adjust"),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['products'] });
-        }
-    });
-
     const handleStockUpdate = () => {
-        const input = window.prompt(`Correct the actual inventory level for ${product?.PRODUCT_NAME}:`, (product?.CURRENT_STOCK || 0).toString());
-        if (input !== null) {
-            const newStock = parseInt(input);
-            if (!isNaN(newStock) && newStock >= 0) {
-                stockMutation.mutate({ 
-                    productId: product!.PRODUCT_ID, 
-                    stock: newStock, 
-                    oldStock: product!.CURRENT_STOCK || 0,
-                    adjustedBy: user?.full_name || user?.email || "Unknown User"
-                });
-            } else {
-                alert("Please enter a valid stock number.");
-            }
-        }
+        onClose();
+        onAdjustClick();
     };
 
     if (!isOpen || !product) return null;

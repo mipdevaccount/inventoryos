@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getPurchaseOrder, updatePOStatus } from '../lib/api';
-import { ArrowLeft, FileText, DollarSign, Building2, Package, CheckCircle2, Truck, XCircle, AlertTriangle } from 'lucide-react';
+import { getPurchaseOrder, updatePOStatus, receivePurchaseOrder } from '../lib/api';
+import { ArrowLeft, FileText, DollarSign, Building2, Package, CheckCircle2, Truck, XCircle, AlertTriangle, ClipboardCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,6 +11,8 @@ const PODetail = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+    const [isReceivingModalOpen, setIsReceivingModalOpen] = useState(false);
+    const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
 
     const { data: po, isLoading } = useQuery({
         queryKey: ['purchaseOrder', poNumber],
@@ -25,6 +27,30 @@ const PODetail = () => {
             setIsCloseModalOpen(false);
         },
     });
+
+    const receiveMutation = useMutation({
+        mutationFn: async () => {
+            const formattedItems = Object.entries(receivedQuantities).map(([product_id, quantity_received]) => ({
+                product_id,
+                quantity_received
+            }));
+            return receivePurchaseOrder(poNumber!, formattedItems);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['purchaseOrder', poNumber] });
+            setIsReceivingModalOpen(false);
+        }
+    });
+
+    useEffect(() => {
+        if (isReceivingModalOpen && po?.items) {
+            const initial: Record<string, number> = {};
+            po.items.forEach((item: any) => {
+                initial[item.PRODUCT_ID] = item.QUANTITY_ORDERED;
+            });
+            setReceivedQuantities(initial);
+        }
+    }, [isReceivingModalOpen, po]);
 
     if (isLoading) {
         return (
@@ -103,6 +129,92 @@ const PODetail = () => {
                 )}
             </AnimatePresence>
 
+            {/* Receive PO Modal */}
+            <AnimatePresence>
+                {isReceivingModalOpen && (
+                    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsReceivingModalOpen(false)}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 border border-white/10 max-h-[90vh] flex flex-col"
+                        >
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400 shrink-0">
+                                    <ClipboardCheck size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold">Receive Purchase Order</h2>
+                                    <p className="text-muted-foreground text-sm">Verify the quantities received against what was ordered.</p>
+                                </div>
+                            </div>
+                            
+                            <div className="overflow-y-auto flex-1 mb-6 border border-border/50 rounded-xl">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-border/50 sticky top-0">
+                                        <tr>
+                                            <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Product</th>
+                                            <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Ordered</th>
+                                            <th className="py-3 px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground text-right w-32">Received</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-border/50">
+                                        {po.items?.map((item: any) => (
+                                            <tr key={item.PRODUCT_ID} className="bg-white dark:bg-slate-900">
+                                                <td className="py-3 px-4">
+                                                    <div className="font-medium text-sm">{item.PRODUCT_NAME}</div>
+                                                    <div className="text-xs text-muted-foreground font-mono">{item.PRODUCT_ID}</div>
+                                                </td>
+                                                <td className="py-3 px-4 text-center font-medium bg-slate-50 dark:bg-slate-800/20">
+                                                    {item.QUANTITY_ORDERED}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <input 
+                                                        type="number" 
+                                                        min="0"
+                                                        max={item.QUANTITY_ORDERED * 5}
+                                                        className="w-full bg-slate-100 dark:bg-slate-800 border border-border rounded-lg px-3 py-1.5 text-right font-bold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                                        value={receivedQuantities[item.PRODUCT_ID] ?? item.QUANTITY_ORDERED}
+                                                        onChange={(e) => setReceivedQuantities(prev => ({...prev, [item.PRODUCT_ID]: parseInt(e.target.value) || 0}))}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex gap-3 mt-auto shrink-0">
+                                <button
+                                    onClick={() => setIsReceivingModalOpen(false)}
+                                    className="flex-1 py-3 px-4 rounded-xl font-semibold border border-border hover:bg-secondary transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => receiveMutation.mutate()}
+                                    disabled={receiveMutation.isPending}
+                                    className="flex-[2] py-3 px-4 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-600/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {receiveMutation.isPending ? 'Processing...' : (
+                                        <>
+                                            <CheckCircle2 size={18} /> Process Receipt
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* Header */}
             <div className="space-y-6">
                 <button
@@ -143,7 +255,7 @@ const PODetail = () => {
                         )}
                         {po.STATUS === 'Ordered' && (
                             <button
-                                onClick={() => statusMutation.mutate('Received')}
+                                onClick={() => setIsReceivingModalOpen(true)}
                                 className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-semibold shadow-lg shadow-green-600/25 hover:bg-green-700 transition-all"
                             >
                                 <CheckCircle2 size={18} />
