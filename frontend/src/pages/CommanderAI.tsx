@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Bot, Send, User, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
-import { getProducts, getVendors, getRequests, askCommanderAI } from '../lib/api';
+import { getProducts, getVendors, getRequests, getPurchaseHistory, askCommanderAI } from '../lib/api';
 
 interface Message {
   id: string;
@@ -25,6 +25,7 @@ const CommanderAI = () => {
     const { data: products } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() });
     const { data: vendors } = useQuery({ queryKey: ['vendors'], queryFn: () => getVendors() });
     const { data: requests } = useQuery({ queryKey: ['requests'], queryFn: () => getRequests() });
+    const { data: purchaseHistory } = useQuery({ queryKey: ['purchaseHistory'], queryFn: () => getPurchaseHistory() });
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -45,7 +46,8 @@ const CommanderAI = () => {
             const contextBase = {
                 products: products || [],
                 vendors: vendors || [],
-                activeRequests: requests || []
+                activeRequests: requests || [],
+                historicalPurchases: purchaseHistory || []
             };
 
             const response = await askCommanderAI(userMsg.content, contextBase);

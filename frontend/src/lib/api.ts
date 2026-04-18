@@ -427,8 +427,37 @@ export const getPurchaseOrder = async (poNumber: string) => {
             UNIT_PRICE: i.unit_price
         }))
     };
+    };
 };
 
+export const getPurchaseHistory = async () => {
+    // For AI context: get all recent PO items with pricing and product information
+    const { data, error } = await supabase.from('po_items')
+        .select(`
+            id,
+            po_number,
+            quantity_ordered,
+            unit_price,
+            products ( product_name, unit_of_measure ),
+            purchase_orders ( vendor_id, created_at, vendors ( vendor_name ) )
+        `)
+        .order('id', { ascending: false })
+        .limit(200);
+
+    if (error) {
+        console.error("Error fetching purchase history:", error);
+        return [];
+    }
+
+    return data.map((item: any) => ({
+        PRODUCT_NAME: item.products?.product_name || 'Unknown Item',
+        VENDOR_NAME: item.purchase_orders?.vendors?.vendor_name || 'Unknown Vendor',
+        UNIT_PRICE: item.unit_price,
+        QUANTITY_ORDERED: item.quantity_ordered,
+        PURCHASED_AT: item.purchase_orders?.created_at,
+        PO_NUMBER: item.po_number
+    }));
+};
 export const getAllPOItems = async () => {
     // Used specifically for the Intelligence Hub variance validations
     const { data, error } = await supabase.from('po_items').select('*, purchase_orders(vendor_id, created_at, status), products(product_name)');
