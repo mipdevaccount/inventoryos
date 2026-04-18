@@ -555,11 +555,28 @@ const RFQModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
     });
 
     const mutation = useMutation({
-        mutationFn: () => requestQuote({
-            request_ids: selectedRequests,
-            vendor_ids: selectedVendors,
-            requested_by: 'Current User' // Update with real user if available
-        }),
+        mutationFn: async () => {
+            const requests = selectedRequests.map(id => pendingRequests?.find(r => r.REQUEST_ID === id));
+            
+            await Promise.all(selectedVendors.map(async vendorId => {
+                const vendor = vendors?.find(v => v.VENDOR_ID === vendorId);
+                if (vendor) {
+                    await requestQuote({
+                        vendorName: vendor.VENDOR_NAME,
+                        vendorEmail: vendor.EMAIL || 'no-reply@pxltd.ca',
+                        requestorName: 'CommanderOS System',
+                        items: requests.map(r => ({
+                            PRODUCT_NAME: r?.PRODUCT_NAME,
+                            PRODUCT_ID: r?.PRODUCT_ID,
+                            quantityNeeded: r?.QUANTITY_NEEDED
+                        })),
+                        notes: "Please provide your best volume pricing."
+                    });
+                }
+            }));
+            
+            return { success: true };
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['requests'] });
             onClose();

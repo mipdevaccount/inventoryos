@@ -572,7 +572,20 @@ export const getAtRiskPOs = async () => {
     return [];
 };
 
-export const requestQuote = async (data: any) => { return { success: true }; };
+export const requestQuote = async (data: any) => { 
+    const { data: response, error } = await supabase.functions.invoke('request-quote', {
+        body: data
+    });
+    
+    // We update the local request statuses immediately in frontend state/DB via other mutations, 
+    // so this function strictly handles the email dispatch proxy.
+    if (error) {
+        console.error("RFQ Edge Function Error:", error);
+        throw new Error(error.message || "Failed to trigger quote request email.");
+    }
+    
+    return response || { success: true }; 
+};
 export const exportProductsCSV = async () => {};
 export const uploadProductsCSV = async (file?: any) => {};
 export const exportVendorsCSV = async () => {};
