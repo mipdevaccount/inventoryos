@@ -155,10 +155,22 @@ const Reports = () => {
             
             // Dynamic Risk Algorithm
             let calculatedRisk = 'Low';
+            let riskReason = 'Vendor meets or exceeds all operational SLAs.';
+            
             if (trueFillRate < 85 || defectRateRaw > 5 || avgLeadDays > 14) {
                 calculatedRisk = 'High';
+                let reasons = [];
+                if (trueFillRate < 85) reasons.push(`Fill Rate (${trueFillRate.toFixed(1)}%) is critically below the 85% acceptable threshold.`);
+                if (defectRateRaw > 5) reasons.push(`Defect Rate (${defectRateRaw.toFixed(1)}%) exceeds the 5% maximum allowance.`);
+                if (avgLeadDays > 14) reasons.push(`Lead Time (${avgLeadDays.toFixed(1)} days) exceeds the 14-day SLA limit.`);
+                riskReason = reasons.join(' ');
             } else if (trueFillRate < 95 || defectRateRaw > 2 || avgLeadDays > 7) {
                 calculatedRisk = 'Medium';
+                let reasons = [];
+                if (trueFillRate < 95) reasons.push(`Fill Rate (${trueFillRate.toFixed(1)}%) is below the 95% optimal target.`);
+                if (defectRateRaw > 2) reasons.push(`Defect Rate (${defectRateRaw.toFixed(1)}%) is above the 2% warning margin.`);
+                if (avgLeadDays > 7) reasons.push(`Lead Time (${avgLeadDays.toFixed(1)} days) exceeds the 7-day optimal delivery window.`);
+                riskReason = reasons.join(' ');
             }
 
             return {
@@ -170,6 +182,7 @@ const Reports = () => {
                 fillRate: trueFillRate.toFixed(1),
                 defectRate: defectRateRaw.toFixed(1),
                 risk: calculatedRisk,
+                riskReason,
                 leadTimeDays: avgLeadDays > 0 ? avgLeadDays : 'N/A',
                 onTimeDelivery: avgLeadDays > 0 ? (avgLeadDays <= 5 ? '98.5%' : avgLeadDays <= 14 ? '92.1%' : '84.0%') : trueFillRate.toFixed(1) + '%'
             };
@@ -356,7 +369,10 @@ const Reports = () => {
                             <thead>
                                 <tr className="border-b border-border/50">
                                     <th className="text-left py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Vendor</th>
-                                    <th className="text-right py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Risk Profile</th>
+                                    <th className="text-right py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">
+                                        Risk Profile
+                                        <span className="text-[9px] lowercase opacity-60 block font-normal -mt-0.5 tracking-normal">(hover for details)</span>
+                                    </th>
                                     <th className="text-right py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Avg Lead Time</th>
                                     <th className="text-right py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">On-Time %</th>
                                     <th className="text-right py-3 font-semibold text-xs text-muted-foreground uppercase tracking-wider">Fill Rate</th>
@@ -375,7 +391,9 @@ const Reports = () => {
                                                 </span>
                                             </td>
                                             <td className="py-4 text-right align-middle">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider
+                                                <span 
+                                                    title={vendor.riskReason}
+                                                    className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider cursor-help hover:opacity-80
                                                     ${vendor.risk === 'Low' ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' :
                                                       vendor.risk === 'Medium' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
                                                       'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
