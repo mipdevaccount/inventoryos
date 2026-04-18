@@ -419,13 +419,12 @@ const RequestModal = ({ isOpen, onClose, product, onAdjustClick }: { isOpen: boo
                                 <button 
                                     type="button"
                                     onClick={handleStockUpdate}
-                                    disabled={stockMutation.isPending}
                                     title="Click to correct actual stock level"
-                                    className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold text-sm border shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50 disabled:hover:scale-100
+                                    className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full font-bold text-sm border shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer
                                         ${(product.CURRENT_STOCK || 0) < 5 ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20' : 
                                           (product.CURRENT_STOCK || 0) <= 10 ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20' : 
                                           'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'}`}>
-                                    {stockMutation.isPending ? '...' : (product.CURRENT_STOCK || 0)}
+                                    {product.CURRENT_STOCK || 0}
                                 </button>
                                 <p className="text-[8px] mt-1 text-muted-foreground max-w-[80px] leading-tight ml-auto cursor-pointer" onClick={handleStockUpdate}>
                                     Click to correct stock level
