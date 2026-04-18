@@ -427,9 +427,7 @@ export const getPurchaseOrder = async (poNumber: string) => {
             UNIT_PRICE: i.unit_price
         }))
     };
-    };
 };
-
 export const getPurchaseHistory = async () => {
     // For AI context: get all recent PO items with pricing and product information
     const { data, error } = await supabase.from('po_items')
