@@ -585,6 +585,10 @@ const RFQModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
             setSelectedVendors([]);
             alert('Quotes requested successfully!');
         },
+        onError: (error) => {
+            console.error(error);
+            alert(`Failed to send RFQ: ${error.message || 'Unknown error'}. Check console for details.`);
+        }
     });
 
     useEffect(() => {
